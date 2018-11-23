@@ -1,46 +1,58 @@
 import numpy as np
 
-
-
-
-def Cp_1_single(Cp_data, T):
-    """returns constant Cp value from Cp_data""" 
-    return Cp_data[1]
-
-def Cp_3_single(Cp_data, T):
-    """calculates Cp value at given T using Cp_data in a,b,c form""" 
-    if Cp_data.ndim == 1:                                           #if the only a,b,c set
-        return (Cp_data[1] + Cp_data[2]*T + Cp_data[3]/T**2)
-
-def Cp_3(Cp_data, T):
-    """calculates Cp value at given T using Cp_data in a,b,c form""" 
-    i = np.searchsorted(Cp_data[:,0], T) - 1                    #looking for T range   
-    return (Cp_data[i,1] + Cp_data[i,2]*T + Cp_data[i,3]/T**2)  #applying a,b,c set
-        
-def Cp_5_single(Cp_data, T):
-    """calculates Cp value at given T using Cp_data in a1,...,a5 form"""                    
-    return np.polyval(Cp_data[:0:-1], T) #if the only polynomial
-
-def Cp_5(ro_data, T):
-    """calculates Cp value at given T using Cp_data in in a1,...,a5 form""" 
-    return np.polyval(Cp_data[(np.searchsorted(Cp_data[:,0],T) - 1),:0:-1], T)        
-
-def Cp_function(Cp_data):
-    """defines Cp function for given Cp_data""" 
-    if Cp_data.ndim == 1:           #define Cp function according to Cp_data structure
-        if   Cp_data.shape[-1] == 2: Cp = Cp_1_single     #constant Cp
-        elif Cp_data.shape[-1] == 4: Cp = Cp_3_single     #Cp from a,b,c
-        elif Cp_data.shape[-1] == 6: Cp = Cp_5_single     #Cp from a1,a2,a3,a4,a5    
-        else: pass                                        #ERROR
-    else:
-        if   Cp_data.shape[-1] == 4: Cp = Cp_3            #Cp from a,b,c (several T ranges)
-        elif Cp_data.shape[-1] == 6: Cp = Cp_5            #Cp from a1,a2,a3,a4,a5 
-        else: pass
-    return Cp  
+def read_particles(partfilepath):
+    """read input parameters of particles from *.pin"""
+    
+    def read_name(inpfile):
+        """reads name from particles data file """
+        name = inpfile.readline().strip()
+        return name
+    
+    def read_Cp(inpfile):
+        """reads Cp data block from particles data file """
+        data = []
+        while True:
+                line = inpfile.readline()
+                if line.strip() == '\n' or line.strip() == '' : break        
+                data.append(line.split())
+        if len(data) == 1:
+            if len(data[0]) in (1, 3, 5): data[0].insert(0, '0.0')
+        for i in range(len(data)):
+            for j in range(len(data[i])):
+                data[i][j] = float(data[i][j])
+        return None
     
     
-Cp_data = np.array([0, 1, 2, 3, 4, 5], float)
-
-Cp = Cp_function(Cp_data)  
+    def read_ro():
+        """reads density data block from particles data file """
+        pass
+          
+    def read_Em():
+        """reads density data block from particles data file """
+        pass
     
-print(Cp(Cp_data, 10))
+    part_name = partfilepath
+    
+    with open(partfilepath, 'r') as inpfile:
+         while True:
+                line = inpfile.readline()
+                if line == '':
+                    break
+                if line.strip() == '[NAME]':
+                    part_name = read_name(inpfile)
+                if line.strip() == '[Cp]':
+                    Cp_data = read_Cp(inpfile)    
+                #if line.strip() == '[DENSITY]':
+                    #ro_data = read_ro(inpfile)
+                #if line.strip() == '[E(m)]':
+                   #ro_data = read_ro(inpfile)
+    inpfile.close()                
+    return part_name, Cp_data#, ro_data, Em_data
+
+partfilepath='graphite.pin'
+    
+part_name, Cp_data = read_particles(partfilepath) 
+    
+print(part_name)
+print(Cp_data)
+print(Cp_data == None)

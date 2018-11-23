@@ -52,11 +52,11 @@ def ro_1_single(ro_data, T):
     
 def ro_poly_single(ro_data, T):
     """calculates density value at given T using ro_data in polynomial form"""                    
-    return np.polyval(ro_data[:0:-1], T)
+    return np.polyval(ro_data[::-1], T)
     
 def ro_poly(ro_data, T):
     """calculates density value at given T using ro_data in polynomial form""" 
-    return np.polyval(ro_data[(np.searchsorted(ro_data[:,0],T) - 1),:0:-1], T) 
+    return np.polyval(ro_data[(np.searchsorted(ro_data[:,0],T) - 1),::-1], T) 
 
 def ro_function(ro_data):
     """defines density function for given ro_data""" 
@@ -77,12 +77,12 @@ def Em_1(Em_data, wvlng)
 
 def Em_poly(Em_data, wvlng)
     """calculates Em value from Em_data polynom""" 
-    return np.polyval(Em_data[:0:-1], wvlng*1e9)]
+    return np.polyval(Em_data[::-1], wvlng*1e9)]
     
 def Em_nk_polys(Em_data, wvlng)
     """calculates Em value from Em_data polynoms for n and k""" 
-    m = complex(np.polyval(Em_data[0, :0:-1], wvlng*1e9)], 
-                np.polyval(Em_data[1, :0:-1], wvlng*1e9)])
+    m = complex(np.polyval(Em_data[0, ::-1], wvlng*1e9)], 
+                np.polyval(Em_data[1, ::-1], wvlng*1e9)])
     x = (m**2-1)/(m**2+2)
     return -x.imag 
 
