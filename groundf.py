@@ -96,47 +96,33 @@ def Em_function:
 
 #=================== END OF E(m) block ========================================#
 
+#=================== alpha coeff block ========================================#
+
+def alpha_1(alpha_data, T)
+    """returns constant alpha coeff value from alpha_data""" 
+    return alpha_data[0]
+
+def alpha_poly(alpha_data, T)
+    """calculates alpha value from alpha_data polynom""" 
+    return np.polyval(alpha_data[::-1], T)]
+    
+def alpha_function:
+    """defines alpha function for given Em_data""" 
+    if alpha_data.shape[-1] == 1: alpha = alpha_1    #constant alpha
+    else: alpha = alpha_poly                         #alpha from polynom   
+    return Em
+
+#=================== END OF alpha coeff block =================================#
+
 #=================== Laser impulse block ======================================#
 
-def fluxden_uni_spat_time(la_r, la_t, la_spat_data, la_time_data, x, t)
-    """returns flux density for spatially and timely uniform impulse""" 
-    if x > la_r or t > la_t:
-        return 0.0
-    else:
-        return 1.0
-    return
+def fluence(la_energy, la_mode, la_spat_data, i):
+    """returns fluence for particuar spatial region (number i)"""
+    pass
     
-def fluxden_uni_spat(la_r, la_t, la_spat_data, la_time_data, x, t)
-    """returns flux density for spatially and timely uniform impulse""" 
-    if x > la_r or t > la_t:
-        return 0.0
-    else:
-        pass #TODO
-    return
-
-def fluxden_uni_time(la_r, la_t, la_spat_data, la_time_data, x, t)
-    """returns flux density for spatially and timely uniform impulse""" 
-    if x > la_r or t > la_t:
-        return 0.0
-    else:
-        pass #TODO
-    return
-
-def fluxden(la_r, la_t, la_spat_data, la_time_data, x, t)
-    """returns flux density using spatial and time profiles""" 
-    if x > la_r or t > la_t:
-        return 0.0
-    else:
-        pass #TODO
-    return    
-
-def fluxden_function:
-    """defines E(m) function for given Em_data""" 
-    if Em_data.ndim == 1:    #define Em function according to Em_data structure
-        if Em_data.shape[-1] == 1: Em = Em_1    #constant E(m)
-        else: Em = Em_poly                      #E(m) from polynom   
-    else: Em = Em_nk_polys                      #E(m) from n and k polynoms
-    return Em
+def flux(fluence, la_time_data):
+    """returns flux at given time""" 
+    pass
 
 #=================== END OF Laser impulse block ===============================#
       

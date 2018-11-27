@@ -1,0 +1,21 @@
+[NAME]
+ND-YAG
+
+[MODE]
+BEAM
+
+[WAVELENGTH]
+1064
+
+[ENERGY]
+0.05
+
+[SPATIAL]
+0 20
+100 20
+
+
+[TIME]
+0 5
+10 10
+20 5 
