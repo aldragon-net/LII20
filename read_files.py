@@ -1,3 +1,5 @@
+import numpy as np
+
 def read_particles(partfilepath):
     """read input parameters of particles from *.pin"""
     
@@ -22,6 +24,8 @@ def read_particles(partfilepath):
             #
             #TODO: обработчик смешанного полиномно-точечного задания
             #
+            if len(data) == 1:
+                data = data[0]
         except Exception:
             return None
         return np.array(data)
@@ -39,6 +43,8 @@ def read_particles(partfilepath):
             for i in range(len(data)):
                 for j in range(len(data[i])):
                     data[i][j] = float(data[i][j])
+            if len(data) == 1:
+                data = data[0]
         except Exception:
             return None
         return np.array(data)  
@@ -50,13 +56,18 @@ def read_particles(partfilepath):
             line = inpfile.readline() 
             if line.strip() == '\n' or line.strip() == '' : break        
             data.append(line.split())
-        for i in range(len(data)):
-            for j in range(len(data[i])):
-                data[i][j] = float(data[i][j])
+            for i in range(len(data)):
+                for j in range(len(data[i])):
+                    data[i][j] = float(data[i][j])
+            if len(data) == 1:
+                data = data[0]
         return np.array(data)
     
     part_name = partfilepath
-    
+    Cp_data = None
+    ro_data = None
+    Em_data = None
+
     with open(partfilepath, 'r') as inpfile:
          while True:
                 line = inpfile.readline()
@@ -69,7 +80,7 @@ def read_particles(partfilepath):
                 if line.strip() == '[DENSITY]':
                     ro_data = read_ro(inpfile)
                 if line.strip() == '[E(m)]':
-                   ro_data = read_ro(inpfile)
+                   Em_data = read_Em(inpfile)
     inpfile.close()                
     return part_name, Cp_data, ro_data, Em_data 
 
@@ -142,7 +153,7 @@ def read_laser(lasfilepath):
         time[1] = time[1]/S     #normalization
         return time
     
-    with open(partfilepath, 'r') as inpfile:
+    with open(lasfilepath, 'r') as inpfile:
          while True:
                 line = inpfile.readline()
                 if line == '':
@@ -258,7 +269,7 @@ def read_gas_mixture(mixfilepath, thermpath):
         
     #end of subfucnctions block#
     
-    with open(gasfilepath, 'r') as inpfile:
+    with open(mixfilepath, 'r') as inpfile:
         while True:
             line = inpfile.readline()
             if line == '':
