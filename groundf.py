@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import lognorm
 
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
@@ -100,21 +101,44 @@ def Em_function(Em_data):
 
 #=================== alpha coeff block ========================================#
 
-def alpha_1(alpha_data, T):
-    """returns constant alpha coeff value from alpha_data""" 
-    return alpha_data[0]
 
-def alpha_poly(alpha_data, T):
+def alpha(alpha_data, T):
     """calculates alpha value from alpha_data polynom""" 
     return np.polyval(alpha_data[::-1], T)
     
-def alpha_function(alpha_data):
-    """defines alpha function for given Em_data""" 
-    if alpha_data.shape[-1] == 1: alpha = alpha_1    #constant alpha
-    else: alpha = alpha_poly                         #alpha from polynom   
-    return alpha
 
 #=================== END OF alpha coeff block =================================#
+
+#=================== Vapor block ==============================================#
+
+
+def va_weight(va_weight_data, T):
+    """calculates vapor mean weight from va_weight_data polynom""" 
+    return (np.polyval(va_weight_data[::-1], T))*1e-3   #a.m.u. to kg
+    
+def va_dH(va_dH_data, T):
+    """calculates vapor enthalpy from va_weight_data polynom""" 
+    return (np.polyval(va_dH_data[::-1], T))
+    
+def va_dH(va_pressure_data, T):
+    """calculates vapor pressure from va_pressure_data polynom""" 
+    return (np.polyval(va_pressure_data[::-1], T))  
+    
+
+#=================== END OF Vapor block =======================================#
+
+#=================== size distribution block ==================================#
+
+
+def probability(part_distrib, size_data, d):
+    """calculates alpha value from alpha_data polynom"""
+    if part_distrib == 'LOGNORMAL':
+        probdensity = lognorm.pdf(d, size_data[1], 0, size_data[0])
+    
+    return probdensity
+    
+
+#=================== END OF size distribution block ===========================#
 
 #=================== Laser impulse block ======================================#
 

@@ -8,6 +8,11 @@ def read_particles(partfilepath):
         name = inpfile.readline().strip()
         return name
     
+    def read_distribution(inpfile):
+        """reads distribution from particles data file """
+        distribution = inpfile.readline().strip()
+        return distribution
+    
     def read_Cp(inpfile):
         """reads Cp data block from particles data file """
         data = []
@@ -52,16 +57,42 @@ def read_particles(partfilepath):
     def read_Em(inpfile):
         """reads density data block from particles data file """
         data = []
-        while True:
-            line = inpfile.readline() 
-            if line.strip() == '\n' or line.strip() == '' : break        
-            data.append(line.split())
+        try:
+            while True:
+                line = inpfile.readline() 
+                if line.strip() == '\n' or line.strip() == '' : break        
+                data.append(line.split())
             for i in range(len(data)):
                 for j in range(len(data[i])):
                     data[i][j] = float(data[i][j])
             if len(data) == 1:
                 data = data[0]
+        except Exception:
+            return None
         return np.array(data)
+    
+    def read_poly(inpfile):
+        """reads single coefficients line from particles data file """
+        line = inpfile.readline() 
+        if line.strip() == '\n' or line.strip() == '' : return None        
+        data = line.split()
+        try:
+            for i in range(len(data)):
+                    data[i] = float(data[i])
+        except Exception:
+            return None
+        return np.array(data)
+        
+    def read_value(inpfile):
+        """reads value from particles data file """
+        line = inpfile.readline() 
+        if line.strip() == '\n' or line.strip() == '' : return None        
+        data = line.split()
+        try:
+            value = float(data[0])
+        except Exception:
+            return None
+        return value
     
     part_name = partfilepath
     Cp_data = None
@@ -75,14 +106,38 @@ def read_particles(partfilepath):
                     break
                 if line.strip() == '[NAME]':
                     part_name = read_name(inpfile)
+                if line.strip() == '[DISTRIBUTION]':
+                    part_distrib = read_distribution(inpfile)
+                if line.strip() == '[SIZE]':
+                    size_data = read_poly(inpfile)
                 if line.strip() == '[Cp]':
                     Cp_data = read_Cp(inpfile)    
                 if line.strip() == '[DENSITY]':
                     ro_data = read_ro(inpfile)
                 if line.strip() == '[E(m)]':
-                   Em_data = read_Em(inpfile)
+                    Em_data = read_Em(inpfile)
+                if line.strip() == '[VAPOR WEIGHT]':
+                    va_weight_data = read_poly(inpfile)
+                if line.strip() == '[VAPOR PRESSURE]':
+                    va_pressure_data = read_poly(inpfile)
+                if line.strip() == '[VAPOR dH]':
+                    va_dH_data = read_poly(inpfile)
+                if line.strip() == '[VAPOR K]':
+                    va_K = read_value(inpfile)
+                if line.strip() == '[OXIDATION RATE]':
+                    ox_k_data = read_poly(inpfile)
+                if line.strip() == '[OXIDATION WEIGHT]':
+                    ox_weight_data = read_poly(inpfile)
+                if line.strip() == '[OXIDATION dH]':
+                    ox_dH_data = read_poly(inpfile)
+                if line.strip() == '[OXIDATION ALPHA]':
+                    ox_alpha = read_value(inpfile)
+                if line.strip() == '[WORK FUNCTION]':
+                    part_workf = read_value(inpfile)
     inpfile.close()                
-    return part_name, Cp_data, ro_data, Em_data 
+    return (part_name, part_distrib, size_data, Cp_data, ro_data, Em_data, 
+           va_weight_data, va_pressure_data, va_dH_data, va_K,
+            ox_k_data, ox_weight_data, ox_dH_data, ox_alpha, part_workf) 
 
 #==============================================================================#
         
