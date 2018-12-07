@@ -6,7 +6,7 @@ from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp
 from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import alpha
-from groundf import probability
+from groundf import size_prob
                     
                   
 particle_path = 'graphite.pin'
@@ -15,13 +15,12 @@ therm_path = 'therm.dat'
 laser_path = 'nd-yag.lin'
 
 (part_name, part_distrib, size_data, Cp_data, ro_data, Em_data, 
-            va_weight_data, va_pressure_data, va_dH_data, va_K,
-            ox_k_data, ox_weight_data, ox_dH_data, ox_alpha,
-                                                            part_workf)  = read_particles(particle_path)
+ va_weight_data, va_pressure_data, va_dH_data, va_K,
+ ox_k_data, ox_weight_data, ox_dH_data, part_workf) = read_particles(particle_path)
 
 composition, gas_weight, gas_Cp_data, alpha_data = read_gas_mixture(gas_path, therm_path)
 
-la_name, la_mode, la_wvlngth, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
+la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
 
 Cp = Cp_function(Cp_data)
 ro = ro_function(ro_data)
@@ -46,7 +45,6 @@ print('Particles vapor K coeff: ', va_K)
 print('Particles oxidation constant data: ', ox_k_data)
 print('Particles oxides weight data: ', ox_weight_data)
 print('Particles oxidation dH data: ', ox_dH_data)
-print('Particles oxidation alpha coeff: ', ox_alpha)
 print('Particles work function: ', part_workf)
 
 print('\nGAS MIXTURE DATA')
@@ -54,6 +52,11 @@ print('Composition of mixture:', composition)
 print('Molecular weight of mixture', gas_weight)
 print('alpha coefficient data: ', alpha_data)
 
+print('\nLASER DATA')
+print('Laser NAME:', la_name)
+print('Mode:', la_mode)
+print('Laser wavelength: ', la_wvlng)
+print('Impulse energy: ', la_energy, ' J')
 
 Ts = range(200,6000,100)
 wvlngs = range(300, 900, 10)
@@ -74,7 +77,7 @@ for wvlng in wvlngs:
     Ems.append(Em(Em_data, wvlng))
 
 for d in sizes:
-    probs.append(probability(part_distrib, size_data, d))
+    probs.append(size_prob(part_distrib, size_data, d))
 
 
 plt.subplot(221)

@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import lognorm
+from math import exp
 
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
@@ -127,15 +128,31 @@ def va_dH(va_pressure_data, T):
 
 #=================== END OF Vapor block =======================================#
 
+#=================== Oxidation block ==========================================#
+
+
+def ox_dH(ox_dH_data, T):
+    """calculates oxidation heat effect from ox_dH_data polynom""" 
+    return (np.polyval(va_dH_data[::-1], T))
+    
+def ox_rate(ox_k_data, T):
+    """calculates oxidation rate constant from ox_k_data""" 
+    a, b, E = (ox_k_data[0], ox_k_data[1], ox_k_data[2])
+    return a*(T**b)*exp(-E/(R*T))
+    
+
+#=================== END OF Oxidation block ===================================#
+
+
 #=================== size distribution block ==================================#
 
 
-def probability(part_distrib, size_data, d):
-    """calculates alpha value from alpha_data polynom"""
+def size_prob(part_distrib, size_data, d):
+    """calculates probability density for give size"""
     if part_distrib == 'LOGNORMAL':
-        probdensity = lognorm.pdf(d, size_data[1], 0, size_data[0])
+        prob_density = lognorm.pdf(d, size_data[1], 0, size_data[0])
     
-    return probdensity
+    return prob_density
     
 
 #=================== END OF size distribution block ===========================#

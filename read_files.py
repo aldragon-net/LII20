@@ -127,17 +127,15 @@ def read_particles(partfilepath):
                 if line.strip() == '[OXIDATION RATE]':
                     ox_k_data = read_poly(inpfile)
                 if line.strip() == '[OXIDATION WEIGHT]':
-                    ox_weight_data = read_poly(inpfile)
+                    ox_weight = read_value(inpfile)
                 if line.strip() == '[OXIDATION dH]':
                     ox_dH_data = read_poly(inpfile)
-                if line.strip() == '[OXIDATION ALPHA]':
-                    ox_alpha = read_value(inpfile)
                 if line.strip() == '[WORK FUNCTION]':
                     part_workf = read_value(inpfile)
     inpfile.close()                
     return (part_name, part_distrib, size_data, Cp_data, ro_data, Em_data, 
            va_weight_data, va_pressure_data, va_dH_data, va_K,
-            ox_k_data, ox_weight_data, ox_dH_data, ox_alpha, part_workf) 
+            ox_k_data, ox_weight, ox_dH_data, part_workf) 
 
 #==============================================================================#
         
