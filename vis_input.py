@@ -20,7 +20,7 @@ laser_path = 'nd-yag.lin'
 
 composition, gas_weight, gas_Cp_data, alpha_data = read_gas_mixture(gas_path, therm_path)
 
-la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
+la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_fluence_data, la_time_data = read_laser(laser_path)
 
 Cp = Cp_function(Cp_data)
 ro = ro_function(ro_data)
@@ -57,6 +57,8 @@ print('Laser NAME:', la_name)
 print('Mode:', la_mode)
 print('Laser wavelength: ', la_wvlng)
 print('Impulse energy: ', la_energy, ' J')
+print('Spatial profile: ', la_spat_data)
+print('Fluence distrbution: ', la_fluence_data)
 
 Ts = range(200,6000,100)
 wvlngs = range(300, 900, 10)

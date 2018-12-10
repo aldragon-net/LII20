@@ -1,5 +1,15 @@
 import numpy as np
 
+#constants ====================================================================#
+c = 299792458.0     #velocity of light
+h = 6.62607015e-34  #Planck's constant
+k = 1.380649e-23    #Boltzmann's constant
+Na = 6.02214076e23  #Avogadro's number
+R = 8.31446         #gas constant
+pi = 3.14159265     #Pi    
+
+#=================== Cp block =================================================#
+
 def read_particles(partfilepath):
     """read input parameters of particles from *.pin"""
     
@@ -26,9 +36,53 @@ def read_particles(partfilepath):
             for i in range(len(data)):
                 for j in range(len(data[i])):
                     data[i][j] = float(data[i][j])
-            #
-            #TODO: обработчик смешанного полиномно-точечного задания
-            #
+            if (not data[0][0] == 0) and (len(data) > 1):
+                data.insert(0, [0, 0])
+           
+           #mixed polynoms-sets processing
+            
+            minsize = 6
+            maxsize = 2
+            for i in range(len(data)):
+                if len(data[i])<minsize:
+                    minsize = len(data[i])
+                if len(data[i])>maxsize:
+                    maxsize = len(data[i])
+            
+            if not minsize == maxsize:
+            
+                if (minsize == 2) and (maxsize == 6):
+                    for i in range(len(data)-1, -1, -1):
+                        if len(data[i]) == 2:
+                            if i == len(data)-1:
+                                data[i][1] = data[i][1]/R
+                                data[i].extend([0, 0, 0, 0])
+                            else:
+                                next_C = R*np.polyval(data[i+1][-1:0:-1], data[i+1][0])
+                                dC = next_C - data[i][1]
+                                dT = data[i+1][0] - data[i][0]
+                                a2 = (dC/dT)/R
+                                a1 = data[i][1]/R - data[i][0]*a2
+                                data[i][1] = a1
+                                data[i].extend([a2, 0, 0, 0])
+                
+                elif (minsize == 2) and (maxsize == 4):
+                    for i in range(len(data)-1, -1, -1):
+                        if len(data[i]) == 2:
+                            if i == len(data)-1:
+                                data[i].extend([0, 0])
+                            else:
+                                next_C = data[i+1][1] + data[i+1][2]*data[i+1][0] + data[i+1][3]/(data[i+1][0])**2
+                                dC = next_C - data[i][1]
+                                dT = data[i+1][0] - data[i][0]
+                                b = dC/dT
+                                a = data[i][1] - data[i][0]*b
+                                data[i][1] = a
+                                data[i].extend([b, 0])
+                        
+                else:
+                    return None     #inconsistent length of polynoms 
+            
             if len(data) == 1:
                 data = data[0]
         except Exception:
@@ -166,7 +220,7 @@ def read_laser(lasfilepath):
         except Exception: return None 
         return la_wvlngth
     
-    def read_spat(inpfile):
+    def read_spat_profile(inpfile):
         data = []
         try:
             while True:
@@ -178,13 +232,37 @@ def read_laser(lasfilepath):
                     data[i][j] = float(data[i][j])
         except Exception:
             return None
-        spat = np.array(data)
-        spat = spat.transpose()
-        if spat.ndim == 1 or spat.shape[0] > 2 : return None
+        spat_profile = np.array(data)
+        spat_profile = spat_profile.transpose()
+        return spat_profile
+        
+    def normalize_spat(energy, mode, spat):
+        
         spat[0] = spat[0]*1e-3  #mm to meters
-        S = np.trapz(spat[1], spat[0])  
-        spat[1] = spat[1]/S     #normalization
-        return spat
+        
+        if mode == 'BEAM':
+            Ss = []
+            fluences = []
+            full_S = 0
+            full_E = 0
+            for i in range(spat.shape[-1]-1):
+                s = pi*(spat[0,i+1]**2 - spat[0,i]**2)
+                fluence = (spat[1,i+1] + spat[1,i])/2
+                Ss.append(s)
+                fluences.append(fluence)
+                full_S = full_S + s
+                full_E = full_E + fluence*s
+                    
+            for i in range(len(Ss)): 
+                Ss[i] = Ss[i]/full_S
+                fluences[i] = fluences[i]*energy/full_E
+        
+        print(Ss)
+        print(fluences)
+        
+        la_fluence_data = np.array((Ss, fluences))
+
+        return la_fluence_data
         
     def read_time(inpfile):
         data = []
@@ -220,11 +298,14 @@ def read_laser(lasfilepath):
                 if line.strip() == '[ENERGY]':
                     la_energy = read_energy(inpfile)                    
                 if line.strip() == '[SPATIAL]':
-                    la_spat_data = read_spat(inpfile)
+                    la_spat_data = read_spat_profile(inpfile)
                 if line.strip() == '[TIME]':
                     la_time_data = read_time(inpfile)
     inpfile.close()                
-    return la_name, la_mode, la_wvlngth, la_energy, la_spat_data, la_time_data
+    
+    la_fluence_data = normalize_spat(la_energy, la_mode, la_spat_data)
+    
+    return la_name, la_mode, la_wvlngth, la_energy, la_spat_data, la_fluence_data, la_time_data
 
 #==============================================================================#
 
