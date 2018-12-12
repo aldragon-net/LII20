@@ -147,25 +147,77 @@ def ox_rate(ox_k_data, T):
 #=================== size distribution block ==================================#
 
 
-def size_prob(part_distrib, size_data, d):
+def size_prob(part_distrib, distrib_data, d):
     """calculates probability density for give size"""
     if part_distrib == 'LOGNORMAL':
-        prob_density = lognorm.pdf(d, size_data[1], 0, size_data[0])
+        prob_density = lognorm.pdf(d, distrib_data[1], 0, distrib_data[0])
     
     return prob_density
+
+def get_size_bins(part_distrib, distrib_data, N_bins):
+    """returns set of particles' size bins"""
+            
+    if part_distrib == 'LOGNORMAL':
+        dmin, dmax = lognorm.interval(0.997, distrib_data[1], 0, distrib_data[0] )    
+        print('interval: ', dmin, dmax)
+        bnds = np.linspace(dmin, dmax, N_bins+1)
+        bin_width = bnds[1] - bnds[0]
+        print(bnds)
+        bins = []
+        for i in range(bnds.shape[0] - 1):
+            d = (bnds[i+1] + bnds[i])/2
+            if i == 0:
+                prob = lognorm.cdf(bnds[i+1], distrib_data[1], 0, distrib_data[0])
+            elif i == bnds.shape[0] - 2:
+                prob = 1 - lognorm.cdf(bnds[i], distrib_data[1], 0, distrib_data[0])
+            else:
+                prob = lognorm.cdf(bnds[i+1], distrib_data[1], 0, distrib_data[0]) \
+                        - lognorm.cdf(bnds[i], distrib_data[1], 0, distrib_data[0])    
+            bins.append((prob, d))
+
+    size_data = np.array(bins)
+    size_data = size_data.transpose()
+  
+    return size_data, bin_width
     
 
 #=================== END OF size distribution block ===========================#
 
 #=================== Laser impulse block ======================================#
 
-def fluence(la_energy, la_mode, la_spat_data, i):
-    """returns fluence for particuar spatial region (number i)"""
-    pass
+def get_fluence(energy, mode, spat):
+    
+    spat[0] = spat[0]*1e-3  #mm to meters
+    
+    if mode == 'BEAM':
+        Ss = []
+        fluences = []
+        full_S = 0
+        full_E = 0
+        for i in range(spat.shape[-1]-1):
+            s = pi*(spat[0,i+1]**2 - spat[0,i]**2)
+            fluence = (spat[1,i+1] + spat[1,i])/2
+            Ss.append(s)
+            fluences.append(fluence)
+            full_S = full_S + s
+            full_E = full_E + fluence*s
+                
+        for i in range(len(Ss)): 
+            Ss[i] = Ss[i]/full_S
+            fluences[i] = fluences[i]*energy/full_E
+    
+    print(Ss)
+    print(fluences)
+    
+    la_fluence_data = np.array((Ss, fluences))
+
+    return la_fluence_data
     
 def flux(fluence, la_time_data):
     """returns flux at given time""" 
     pass
 
 #=================== END OF Laser impulse block ===============================#
-      
+
+
+

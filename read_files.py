@@ -147,7 +147,8 @@ def read_particles(partfilepath):
         except Exception:
             return None
         return value
-    
+        
+ 
     part_name = partfilepath
     Cp_data = None
     ro_data = None
@@ -163,7 +164,7 @@ def read_particles(partfilepath):
                 if line.strip() == '[DISTRIBUTION]':
                     part_distrib = read_distribution(inpfile)
                 if line.strip() == '[SIZE]':
-                    size_data = read_poly(inpfile)
+                    distrib_data = read_poly(inpfile)
                 if line.strip() == '[Cp]':
                     Cp_data = read_Cp(inpfile)    
                 if line.strip() == '[DENSITY]':
@@ -186,9 +187,10 @@ def read_particles(partfilepath):
                     ox_dH_data = read_poly(inpfile)
                 if line.strip() == '[WORK FUNCTION]':
                     part_workf = read_value(inpfile)
+                                  
     inpfile.close()                
-    return (part_name, part_distrib, size_data, Cp_data, ro_data, Em_data, 
-           va_weight_data, va_pressure_data, va_dH_data, va_K,
+    return (part_name, part_distrib, distrib_data, Cp_data, ro_data, 
+            Em_data, va_weight_data, va_pressure_data, va_dH_data, va_K,
             ox_k_data, ox_weight, ox_dH_data, part_workf) 
 
 #==============================================================================#
@@ -234,35 +236,9 @@ def read_laser(lasfilepath):
             return None
         spat_profile = np.array(data)
         spat_profile = spat_profile.transpose()
+        
         return spat_profile
         
-    def normalize_spat(energy, mode, spat):
-        
-        spat[0] = spat[0]*1e-3  #mm to meters
-        
-        if mode == 'BEAM':
-            Ss = []
-            fluences = []
-            full_S = 0
-            full_E = 0
-            for i in range(spat.shape[-1]-1):
-                s = pi*(spat[0,i+1]**2 - spat[0,i]**2)
-                fluence = (spat[1,i+1] + spat[1,i])/2
-                Ss.append(s)
-                fluences.append(fluence)
-                full_S = full_S + s
-                full_E = full_E + fluence*s
-                    
-            for i in range(len(Ss)): 
-                Ss[i] = Ss[i]/full_S
-                fluences[i] = fluences[i]*energy/full_E
-        
-        print(Ss)
-        print(fluences)
-        
-        la_fluence_data = np.array((Ss, fluences))
-
-        return la_fluence_data
         
     def read_time(inpfile):
         data = []
@@ -302,10 +278,8 @@ def read_laser(lasfilepath):
                 if line.strip() == '[TIME]':
                     la_time_data = read_time(inpfile)
     inpfile.close()                
-    
-    la_fluence_data = normalize_spat(la_energy, la_mode, la_spat_data)
-    
-    return la_name, la_mode, la_wvlngth, la_energy, la_spat_data, la_fluence_data, la_time_data
+      
+    return la_name, la_mode, la_wvlngth, la_energy, la_spat_data, la_time_data
 
 #==============================================================================#
 
