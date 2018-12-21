@@ -10,7 +10,7 @@ from groundf import size_prob, get_size_bins
 from groundf import get_fluence
                     
                   
-particle_path = 'graphite.pin'
+particle_path = 'particles/graphite.pin'
 gas_path = 'gas.gin' 
 therm_path = 'therm.dat'
 laser_path = 'nd-yag.lin'
