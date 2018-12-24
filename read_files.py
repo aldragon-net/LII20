@@ -173,7 +173,8 @@ def read_particles(partfilepath):
                     Em_data = read_Em(inpfile)
                 if line.strip() == '[VAPOR WEIGHT]':
                     va_weight_data = read_poly(inpfile)
-                if line.strip() == '[VAPOR PRESSURE]':
+                if line.strip() == '[VAPOR PRESSURE]' \
+                or line.strip() == '[VAPOR PREF TREF]' :                  
                     va_pressure_data = read_poly(inpfile)
                 if line.strip() == '[VAPOR dH]':
                     va_dH_data = read_poly(inpfile)

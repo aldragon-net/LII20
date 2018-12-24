@@ -1,8 +1,13 @@
 import numpy as np
 import scipy as sp
-from scipy.stats import lognorm
+
+from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
+from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
+from groundf import va_weight, va_dH, va_P, va_P_CC
+
+from groundf import alpha 
 
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
@@ -13,6 +18,15 @@ R = 8.31446         #gas constant
 pi = 3.14159265     #Pi    
 
 pi3 = pi**3
+
+#=================== Radiation heating =======================================#
+ 
+def Q_abs(Em_data, la_wvlng, flux, d):
+    """calculates radiation heating_rate"""   
+    Em = Em_function(Em_data)
+    Q_abs = flux * (pi**2)*(d**3)*Em(la_wvlng)/(la_wvlng*1e-9)   #nm to meters
+    return Q_abs
+    
 
 #=================== Radiation cooling =======================================#
  
@@ -39,7 +53,37 @@ def Q_rad_integrate(Em_data, d, T):
     
     
 
-#=================== Conductive cooling =======================================#
+#=================== Vaporization cooling ====================================#
 
+def Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, va_K, flux, d, T):
+    """calculates sublimation-cooling rate"""   
+    dH = va_dH(va_dH_data, T)
+    W = va_weight(va_weight_data, T)
+    if va_pressure_data.shape[-1] == 2: 
+        P = va_P_CC(va_pressure_data, va_dH_data, T)
+    else:
+        P = va_P(va_pressure_data, T)
+    dM_sub =  (-pi*(d**2)*W*P*a_m/R*T) * (R*T/(2*pi*W))**va_K 
+    Q_sub = dM_sub * dH/W
+
+    return Q_sub, dM_sub    
+
+
+#=================== Conductive cooling ====================================#
+
+def Q_cond(gas_weight, gas_Cp_data, alpha_data, P0, T0, d, T):
+    """calculates conductive rate"""
+    def Cp(T):
+        """gas_Cp_function for integration"""
+        return np.interp(T, gas_Cp_data[0], gas_Cp_data[1])
+    
+    W = gas_weight
+    a = alpha(alpha_data, T)
+    I, I_err = sp.integrate.quad(Cp, T0, T, epsrel=1e-5)
+    
+    Q_cond = -pi*(d**2)*a*P0/(R*T0) * (R*T0/(2*pi*W))**0.5 * (R*(T-T0)/2 + I)
+    
+    return Q_cond
+    
 
 

@@ -121,11 +121,18 @@ def va_dH(va_dH_data, T):
     """calculates vapor enthalpy from va_weight_data polynom""" 
     return (np.polyval(va_dH_data[::-1], T))
     
-def va_dH(va_pressure_data, T):
+def va_P(va_pressure_data, T):
     """calculates vapor pressure from va_pressure_data polynom""" 
     return (np.polyval(va_pressure_data[::-1], T))  
     
-
+def va_P_CC(va_pressure_data, va_dH_data, T):
+    """calculates vapor pressure from va_pressure_data using C-C equation""" 
+    Pref = va_pressure_data[0]
+    Tref = va_pressure_data[1]
+    dH = va_dH_data[0]
+    P = Pref * exp((-dH/R)*(1/T - 1/Tref))
+    return P 
+    
 #=================== END OF Vapor block =======================================#
 
 #=================== Oxidation block ==========================================#
@@ -213,7 +220,7 @@ def get_fluence(energy, mode, spat):
 
     return la_fluence_data
     
-def flux(fluence, la_time_data):
+def flux(energy, la_fluence_data, la_time_data, t):
     """returns flux at given time""" 
     pass
 
