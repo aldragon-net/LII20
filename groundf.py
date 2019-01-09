@@ -121,7 +121,7 @@ def va_dH(va_dH_data, T):
     """calculates vapor enthalpy from va_weight_data polynom""" 
     return (np.polyval(va_dH_data[::-1], T))
     
-def va_P(va_pressure_data, T):
+def va_P_poly(va_pressure_data, va_dH_data, T):
     """calculates vapor pressure from va_pressure_data polynom""" 
     return (np.polyval(va_pressure_data[::-1], T))  
     
@@ -131,7 +131,16 @@ def va_P_CC(va_pressure_data, va_dH_data, T):
     Tref = va_pressure_data[1]
     dH = va_dH_data[0]
     P = Pref * exp((-dH/R)*(1/T - 1/Tref))
-    return P 
+    return P
+
+def va_P_function(va_pressure_data):
+    """defines vapor pressure function for given va_pressure_data""" 
+    if va_pressure_data.shape[-1] == 2: 
+        va_P = va_P_CC
+    else:
+        va_P = va_P_poly
+    return va_P
+    
     
 #=================== END OF Vapor block =======================================#
 
@@ -193,7 +202,7 @@ def get_size_bins(part_distrib, distrib_data, N_bins):
 #=================== Laser impulse block ======================================#
 
 def get_fluence(energy, mode, spat):
-    
+    """returns set of fluences from spatial data""" 
     spat[0] = spat[0]*1e-3  #mm to meters
     
     if mode == 'BEAM':
@@ -220,9 +229,10 @@ def get_fluence(energy, mode, spat):
 
     return la_fluence_data
     
-def flux(energy, la_fluence_data, la_time_data, t):
-    """returns flux at given time""" 
-    pass
+def la_flux(fluence, la_time_data, t):
+    """returns flux at given time using fluence and time profile""" 
+    flux = fluence * np.interp(t, la_time_data[0], la_time_data[1], 0, 0)
+    return flux
 
 #=================== END OF Laser impulse block ===============================#
 

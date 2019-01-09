@@ -5,7 +5,7 @@ from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp
 from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
-from groundf import va_weight, va_dH, va_P, va_P_CC
+from groundf import va_weight, va_dH, va_P_function, va_P_poly, va_P_CC
 
 from groundf import alpha 
 
@@ -24,7 +24,7 @@ pi3 = pi**3
 def Q_abs(Em_data, la_wvlng, flux, d):
     """calculates radiation heating_rate"""   
     Em = Em_function(Em_data)
-    Q_abs = flux * (pi**2)*(d**3)*Em(la_wvlng)/(la_wvlng*1e-9)   #nm to meters
+    Q_abs = flux * (pi**2)*(d**3)*Em(Em_data, la_wvlng)/(la_wvlng*1e-9)   #nm to meters
     return Q_abs
     
 
@@ -55,15 +55,13 @@ def Q_rad_integrate(Em_data, d, T):
 
 #=================== Vaporization cooling ====================================#
 
-def Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, va_K, flux, d, T):
+def Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K, flux, d, T):
     """calculates sublimation-cooling rate"""   
     dH = va_dH(va_dH_data, T)
     W = va_weight(va_weight_data, T)
-    if va_pressure_data.shape[-1] == 2: 
-        P = va_P_CC(va_pressure_data, va_dH_data, T)
-    else:
-        P = va_P(va_pressure_data, T)
-    dM_sub =  (-pi*(d**2)*W*P*a_m/R*T) * (R*T/(2*pi*W))**va_K 
+    va_P = va_P_function(va_pressure_data)
+    P = va_P(va_pressure_data, va_dH_data, T)
+    dM_sub =  (-pi*(d**2)*W*P*va_massacc/R*T) * (R*T/(2*pi*W))**va_K 
     Q_sub = dM_sub * dH/W
 
     return Q_sub, dM_sub    

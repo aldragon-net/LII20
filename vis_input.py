@@ -5,15 +5,18 @@ from read_files import read_particles, read_laser, read_gas_mixture
 from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
 from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
+from groundf import va_P_function, va_P_poly, va_P_CC
 from groundf import alpha
 from groundf import size_prob, get_size_bins
-from groundf import get_fluence
+from groundf import get_fluence, la_flux
+
+from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond
                     
                   
 particle_path = 'particles/graphite.pin'
 gas_path = 'gas.gin' 
 therm_path = 'therm.dat'
-laser_path = 'nd-yag.lin'
+laser_path = 'lasers/nd-yag.lin'
 
 N_bins = 7
 
@@ -65,6 +68,7 @@ print('Mode:', la_mode)
 print('Laser wavelength: ', la_wvlng)
 print('Impulse energy: ', la_energy, ' J')
 print('Spatial profile: ', la_spat_data)
+print('Time profile: ', la_time_data)
 print('Fluence distrbution: ', la_fluence_data)
 
 
@@ -84,18 +88,35 @@ for i in range(size_data.shape[-1]):
 Ts = range(200,6000,100)
 wvlngs = range(300, 900, 10)
 sizes = np.linspace(0, size_data[1][-1]+size_data[1][0]/2, 100)
+times = np.linspace(-la_time_data[0,-1]/3, la_time_data[0,-1]*4/3, 100)
 
 Cps = []
 ros = []
 alphas = []
 Ems = []
 probs = []
+Q_rads_10 = []
+Q_simp_rads_10 = []
+Q_rads_20 = []
+Q_rads_30 = []
+Q_abss = []
+Q_subs = []
+Q_conds = []
 
 for T in Ts:
     Cps.append(Cp(Cp_data, T))
     ros.append(ro(ro_data, T))
     alphas.append(alpha(alpha_data, T))
+    Q_rads_10.append(Q_rad_integrate(Em_data, 1e-8, T))
+    Q_simp_rads_10.append(Q_rad_simple(Em(Em_data, 500), 1e-8, T))
+    Q_rads_20.append(Q_rad_integrate(Em_data, 2e-8, T))
+    Q_rads_30.append(Q_rad_integrate(Em_data, 3e-8, T))
+    Q_subs.append(Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, 0.5, va_K, la_flux(la_fluence_data[0,1], la_time_data, 0), 1e-8, T)[0])
+    Q_conds.append(Q_cond(gas_weight, gas_Cp_data, alpha_data, 101500, 300, 1e-8, T))
 
+for t in times:
+    Q_abss.append(Q_abs(Em_data, la_wvlng, flux(la_fluence_data[0,1], la_time_data, t), 1e-8))
+    
 for wvlng in wvlngs:
     Ems.append(Em(Em_data, wvlng))
 
@@ -143,6 +164,39 @@ plt.plot(la_time_data[0], la_time_data[1])
 plt.ylabel('I')
 plt.xlabel('t')
 plt.suptitle('Laser data')
+plt.show()
+
+
+plt.plot(Ts, Q_rads_10, 'r-', 
+         Ts, Q_simp_rads_10, 'g--',
+         Ts, Q_rads_20, 'b--',
+         Ts, Q_rads_30, 'b-')
+plt.legend(('10 nm', '10 nm simple', '20 nm', '30 nm'))
+plt.ylabel('Q_rad')
+plt.yscale('log')
+plt.xlabel('T')
+plt.suptitle('Q radiation')
+plt.show()
+
+plt.plot(times, Q_abss)
+plt.legend()
+plt.ylabel('Q_abs')
+plt.xlabel('t')
+plt.suptitle('Q absorbed' )
+plt.show()
+
+plt.plot(Ts, Q_subs)
+plt.ylabel('Q_sub')
+plt.yscale('linear')
+plt.xlabel('T')
+plt.suptitle('Q sublimation')
+plt.show()
+
+plt.plot(Ts, Q_conds)
+plt.ylabel('Q_sub')
+plt.yscale('linear')
+plt.xlabel('T')
+plt.suptitle('Q conductive')
 plt.show()
 
 
