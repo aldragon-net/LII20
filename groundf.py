@@ -175,10 +175,8 @@ def get_size_bins(part_distrib, distrib_data, N_bins):
             
     if part_distrib == 'LOGNORMAL':
         dmin, dmax = lognorm.interval(0.997, distrib_data[1], 0, distrib_data[0] )    
-        print('interval: ', dmin, dmax)
         bnds = np.linspace(dmin, dmax, N_bins+1)
         bin_width = bnds[1] - bnds[0]
-        print(bnds)
         bins = []
         for i in range(bnds.shape[0] - 1):
             d = (bnds[i+1] + bnds[i])/2

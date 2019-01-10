@@ -24,7 +24,7 @@ pi3 = pi**3
 def Q_abs(Em_data, la_wvlng, flux, d):
     """calculates radiation heating_rate"""   
     Em = Em_function(Em_data)
-    Q_abs = flux * (pi**2)*(d**3)*Em(Em_data, la_wvlng)/(la_wvlng*1e-9)   #nm to meters
+    Q_abs = flux * (pi**2)*(d**3)*Em(Em_data, la_wvlng) / la_wvlng
     return Q_abs
     
 
@@ -55,14 +55,15 @@ def Q_rad_integrate(Em_data, d, T):
 
 #=================== Vaporization cooling ====================================#
 
-def Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K, flux, d, T):
+def Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data,
+             va_massacc, va_K, flux, d, T):
     """calculates sublimation-cooling rate"""   
     dH = va_dH(va_dH_data, T)
     W = va_weight(va_weight_data, T)
     va_P = va_P_function(va_pressure_data)
-    P = va_P(va_pressure_data, va_dH_data, T)
-    dM_sub =  (-pi*(d**2)*W*P*va_massacc/R*T) * (R*T/(2*pi*W))**va_K 
-    Q_sub = dM_sub * dH/W
+    P = va_P(va_pressure_data, va_dH_data, T)   
+    dM_sub =  (-pi*(d**2)*W*P*va_massacc/(R*T)) * (R*T/(2*pi*W))**va_K 
+    Q_sub = - dM_sub * dH/W
 
     return Q_sub, dM_sub    
 
@@ -78,8 +79,8 @@ def Q_cond(gas_weight, gas_Cp_data, alpha_data, P0, T0, d, T):
     W = gas_weight
     a = alpha(alpha_data, T)
     I, I_err = sp.integrate.quad(Cp, T0, T, epsrel=1e-5)
-    
-    Q_cond = -pi*(d**2)*a*P0/(R*T0) * (R*T0/(2*pi*W))**0.5 * (R*(T-T0)/2 + I)
+        
+    Q_cond = pi*(d**2)*a*P0/(R*T0) * (R*T0/(2*pi*W))**0.5 * (R*(T-T0)/2 + I)
     
     return Q_cond
     

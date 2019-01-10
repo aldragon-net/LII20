@@ -8,19 +8,35 @@ from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import alpha
 from groundf import size_prob, get_size_bins
-from groundf import get_fluence
-                    
-                  
+from groundf import get_fluence, la_flux
+
+from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond
+
+#constants ====================================================================#
+c = 299792458.0     #velocity of light
+h = 6.62607015e-34  #Planck's constant
+k = 1.380649e-23    #Boltzmann's constant
+Na = 6.02214076e23  #Avogadro's number
+R = 8.31446         #gas constant
+pi = 3.14159265     #Pi    
+
+pi3 = pi**3
+
 particle_path = 'particles/graphite.pin'
-gas_path = 'gas.gin' 
+gas_path = 'mixtures/gas.gin' 
 therm_path = 'therm.dat'
-laser_path = 'nd-yag.lin'
+laser_path = 'lasers/nd-yag.lin'
 
 N_bins = 7
 
-(part_name, part_distrib, distrib_data, Cp_data, ro_data, Em_data, 
- va_weight_data, va_pressure_data, va_dH_data, va_K,
- ox_k_data, ox_weight_data, ox_dH_data, part_workf) = read_particles(particle_path)
+(
+ part_name, part_distrib, distrib_data,
+ Cp_data, ro_data, Em_data,
+ va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
+ ox_k_data, ox_weight, ox_dH_data,
+ ann_k_data, ann_dH, ann_Nd_frac,
+ part_workf
+           ) = read_particles(particle_path)
 
 composition, gas_weight, gas_Cp_data, alpha_data = read_gas_mixture(gas_path, therm_path)
 
@@ -33,80 +49,71 @@ Cp = Cp_function(Cp_data)
 ro = ro_function(ro_data)
 Em = Em_function(Em_data)
 
-print('PARTICLES DATA')
-print('Particles name: ', part_name)
-print('Particles distribution:', part_distrib)
-print('Distribution_data')
-print('Particles disrtibution data:', distrib_data)
-print('Particles Cp data: \n', Cp_data)
-print('Cp_function: ', Cp)
-print('Particles ro data: \n', ro_data)
-print('ro function: ', ro)
-print('Particles E(m) data: \n', Em_data)
-print('E(m) function: ', Em)
+P0 = 101500
+T0 = 300
 
-print('Particles vapor weight data: ', va_weight_data)
-print('Particles vapor pressure data: ', va_pressure_data)
-print('Particles vapor dH data: ', va_dH_data)
-print('Particles vapor K coeff: ', va_K)
+timepoints = np.linspace(0, 1e-7, 101)
 
-print('Particles oxidation constant data: ', ox_k_data)
-print('Particles oxides weight data: ', ox_weight_data)
-print('Particles oxidation dH data: ', ox_dH_data)
-print('Particles work function: ', part_workf)
+d = 2e-8
 
-print('\nGAS MIXTURE DATA')
-print('Composition of mixture:', composition)
-print('Molecular weight of mixture', gas_weight)
-print('alpha coefficient data: ', alpha_data)
-
-print('\nLASER DATA')
-print('Laser NAME:', la_name)
-print('Mode:', la_mode)
-print('Laser wavelength: ', la_wvlng)
-print('Impulse energy: ', la_energy, ' J')
-print('Spatial profile: ', la_spat_data)
-print('Fluence distrbution: ', la_fluence_data)
+fluence = 3000
 
 
+def get_profiles(fluence, d, timepoints):
+    """solve LII problem providing T, M, ... profiles"""
 
-#constants ====================================================================#
-c = 299792458.0     #velocity of light
-h = 6.62607015e-34  #Planck's constant
-k = 1.380649e-23    #Boltzmann's constant
-Na = 6.02214076e23  #Avogadro's number
-R = 8.31446         #gas constant
-pi = 3.14159265     #Pi    
-
-pi3 = pi**3
-
-#=================== Radiation block ==========================================#
- 
-def Q_rad_simple(Em, d, T):
-       
-    Q_rad = (198.97*pi3*d**3*(k*T)**5 / (h*(h*c)**3))*Em
+    def M2d(M, T):
+        """particle diameter from mass"""
+        return np.cbrt(6*M/(pi*ro(ro_data, T)))
     
-    return Q_rad
+    def d2M(d, T):
+        """particle mass from diameter"""
+        return pi*ro(ro_data, T)*(d**3)/6
+        
+
+    def LIIF(Y, t):
+        """function for ODEINT"""
+                     
+        (T, M, N_ox, N_ann, charge) = Y
+        
+        d = M2d(M, T)
+        
+        flux = la_flux(fluence, la_time_data, t)
+        
+        Q_sub, dM_sub = Q_dM_sub(va_weight_data, va_pressure_data, 
+                     va_dH_data, va_massacc, va_K, flux, d, T)
+                     
+        Q_ox, dM_ox = 0, 0
+        Q_ann, dN_ann = 0, 0
+        Q_therm = 0
+        
+        Q = Q_abs(Em_data, la_wvlng, flux, d)                         \
+          - Q_rad_integrate(Em_data, d, T)                            \
+          - Q_sub                                                     \
+          - Q_cond(gas_weight, gas_Cp_data, alpha_data, P0, T0, d, T) \
+          + Q_ox                                                      \
+          + Q_ann                                                     \
+          - Q_therm
+          
+        dYdt = [
+               Q/(M*Cp(Cp_data, T)),
+               dM_sub + dM_ox,
+               dM_ox,               #!!!TEMP
+               dN_ann,
+               Q_therm
+               ]
+                
+        return dYdt
+        
+    M0 = d2M(d, T0)
     
-def Q_rad_integrate(Em_data, d, T):
-
-    Em = Em_function(Em_data)
+    Y0 = (T0, M0, 0, 0, 0)
+        
+    solution = sp.integrate.odeint(LIIF, Y0, timepoints, rtol=1e-5)
     
-    def F(wvlng):
-        return Em(Em_data, wvlng) / (wvlng**6 * (np.expm1((h*c)/(wvlng*k*T)) ))
+    return solution
+
     
-    I, I_err = sp.integrate.quad(F, 0, 1e-3, epsrel=1e-5)
+solution = get_profiles(fluence, d, timepoints)
 
-         
-    Q_rad = 8*pi3*d**3*h*(c**2)*I 
-    
-    return Q_rad
-
-for i in range(100):
-    Q_s = Q_rad_simple(0.3, 1e-8, 3000+i)
-    print(i, " Simplified estimation:", Q_s)
-
-for i in range(100):
-    Q_int = Q_rad_integrate(Em_data, 1e-8, 3000+i)
-    print(i, "Integrated value:", Q_int)
-
+print(solution)

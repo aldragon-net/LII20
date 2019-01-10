@@ -178,6 +178,8 @@ def read_particles(partfilepath):
                     va_pressure_data = read_poly(inpfile)
                 if line.strip() == '[VAPOR dH]':
                     va_dH_data = read_poly(inpfile)
+                if line.strip() == '[VAPOR MASS ACC]':
+                    va_massacc = read_value(inpfile)
                 if line.strip() == '[VAPOR K]':
                     va_K = read_value(inpfile)
                 if line.strip() == '[OXIDATION RATE]':
@@ -186,13 +188,23 @@ def read_particles(partfilepath):
                     ox_weight = read_value(inpfile)
                 if line.strip() == '[OXIDATION dH]':
                     ox_dH_data = read_poly(inpfile)
+                if line.strip() == '[ANNEALING RATE]':
+                    ann_k_data = read_poly(inpfile)
+                if line.strip() == '[ANNEALING dH]':
+                    ann_dH = read_value(inpfile)
+                if line.strip() == '[ANNEALING Nd FRAC]':
+                    ann_Nd_frac = read_value(inpfile)                      
                 if line.strip() == '[WORK FUNCTION]':
-                    part_workf = read_value(inpfile)
-                                  
+                    part_workf = read_value(inpfile)                               
     inpfile.close()                
-    return (part_name, part_distrib, distrib_data, Cp_data, ro_data, 
-            Em_data, va_weight_data, va_pressure_data, va_dH_data, va_K,
-            ox_k_data, ox_weight, ox_dH_data, part_workf) 
+    return (
+            part_name, part_distrib, distrib_data,
+            Cp_data, ro_data, Em_data,
+            va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
+            ox_k_data, ox_weight, ox_dH_data,
+            ann_k_data, ann_dH, ann_Nd_frac,
+            part_workf
+           ) 
 
 #==============================================================================#
         

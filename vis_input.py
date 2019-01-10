@@ -14,15 +14,20 @@ from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond
                     
                   
 particle_path = 'particles/graphite.pin'
-gas_path = 'gas.gin' 
+gas_path = 'mixtures/gas.gin' 
 therm_path = 'therm.dat'
 laser_path = 'lasers/nd-yag.lin'
 
 N_bins = 7
 
-(part_name, part_distrib, distrib_data, Cp_data, ro_data, Em_data, 
- va_weight_data, va_pressure_data, va_dH_data, va_K,
- ox_k_data, ox_weight_data, ox_dH_data, part_workf) = read_particles(particle_path)
+(
+ part_name, part_distrib, distrib_data,
+ Cp_data, ro_data, Em_data,
+ va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
+ ox_k_data, ox_weight, ox_dH_data,
+ ann_k_data, ann_dH, ann_Nd_frac,
+ part_workf
+           ) = read_particles(particle_path)
 
 composition, gas_weight, gas_Cp_data, alpha_data = read_gas_mixture(gas_path, therm_path)
 
@@ -53,7 +58,7 @@ print('Particles vapor dH data: ', va_dH_data)
 print('Particles vapor K coeff: ', va_K)
 
 print('Particles oxidation constant data: ', ox_k_data)
-print('Particles oxides weight data: ', ox_weight_data)
+print('Particles oxides weight data: ', ox_weight)
 print('Particles oxidation dH data: ', ox_dH_data)
 print('Particles work function: ', part_workf)
 
@@ -111,11 +116,11 @@ for T in Ts:
     Q_simp_rads_10.append(Q_rad_simple(Em(Em_data, 500), 1e-8, T))
     Q_rads_20.append(Q_rad_integrate(Em_data, 2e-8, T))
     Q_rads_30.append(Q_rad_integrate(Em_data, 3e-8, T))
-    Q_subs.append(Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, 0.5, va_K, la_flux(la_fluence_data[0,1], la_time_data, 0), 1e-8, T)[0])
+    Q_subs.append(Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K, la_flux(la_fluence_data[1,0], la_time_data, 0), 1e-8, T)[0])
     Q_conds.append(Q_cond(gas_weight, gas_Cp_data, alpha_data, 101500, 300, 1e-8, T))
 
 for t in times:
-    Q_abss.append(Q_abs(Em_data, la_wvlng, flux(la_fluence_data[0,1], la_time_data, t), 1e-8))
+    Q_abss.append(Q_abs(Em_data, la_wvlng, la_flux(150, la_time_data, t), 1e-8))
     
 for wvlng in wvlngs:
     Ems.append(Em(Em_data, wvlng))
@@ -187,7 +192,8 @@ plt.show()
 
 plt.plot(Ts, Q_subs)
 plt.ylabel('Q_sub')
-plt.yscale('linear')
+plt.yscale('log')
+plt.ylim((1e-15, 1e3))
 plt.xlabel('T')
 plt.suptitle('Q sublimation')
 plt.show()
