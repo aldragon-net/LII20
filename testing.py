@@ -1,6 +1,7 @@
 import numpy as np
 import scipy as sp
 from scipy.stats import lognorm
+import time
 
 from read_files import read_particles, read_laser, read_gas_mixture
 from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
@@ -38,7 +39,7 @@ N_bins = 7
  part_workf
            ) = read_particles(particle_path)
 
-composition, gas_weight, gas_Cp_data, alpha_data = read_gas_mixture(gas_path, therm_path)
+composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0 = read_gas_mixture(gas_path, therm_path)
 
 la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
 
@@ -49,10 +50,7 @@ Cp = Cp_function(Cp_data)
 ro = ro_function(ro_data)
 Em = Em_function(Em_data)
 
-P0 = 101500
-T0 = 300
-
-timepoints = np.linspace(0, 1e-7, 101)
+timepoints = np.linspace(0, 1e-6, 1001)
 
 d = 2e-8
 
@@ -88,9 +86,9 @@ def get_profiles(fluence, d, timepoints):
         Q_therm = 0
         
         Q = Q_abs(Em_data, la_wvlng, flux, d)                         \
-          - Q_rad_integrate(Em_data, d, T)                            \
+          - Q_rad_simple(Em_data[0], d, T)                            \
           - Q_sub                                                     \
-          - Q_cond(gas_weight, gas_Cp_data, alpha_data, P0, T0, d, T) \
+          - Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, d, T) \
           + Q_ox                                                      \
           + Q_ann                                                     \
           - Q_therm
@@ -113,7 +111,9 @@ def get_profiles(fluence, d, timepoints):
     
     return solution
 
-    
+start_time = time.time()    
 solution = get_profiles(fluence, d, timepoints)
+tau = time.time() - start_time
 
 print(solution)
+print('In ', tau)

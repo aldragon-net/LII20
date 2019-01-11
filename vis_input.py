@@ -29,7 +29,7 @@ N_bins = 7
  part_workf
            ) = read_particles(particle_path)
 
-composition, gas_weight, gas_Cp_data, alpha_data = read_gas_mixture(gas_path, therm_path)
+composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0 = read_gas_mixture(gas_path, therm_path)
 
 la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
 
@@ -65,7 +65,12 @@ print('Particles work function: ', part_workf)
 print('\nGAS MIXTURE DATA')
 print('Composition of mixture:', composition)
 print('Molecular weight of mixture', gas_weight)
+print('T0: ', T0)
+print('P0:', P0)
 print('alpha coefficient data: ', alpha_data)
+print('Gas Cp data:', gas_Cp_data)
+print('Gas Cpint data:', gas_Cpint_data)
+
 
 print('\nLASER DATA')
 print('Laser NAME:', la_name)
@@ -90,7 +95,7 @@ for i in range(size_data.shape[-1]):
     bin_distr_x.append(size_data[1][i]+bin_width/2)
     bin_distr_y.append(0)
 
-Ts = range(200,6000,100)
+Ts = range(200,5000,100)
 wvlngs = range(300, 900, 10)
 sizes = np.linspace(0, size_data[1][-1]+size_data[1][0]/2, 100)
 times = np.linspace(-la_time_data[0,-1]/3, la_time_data[0,-1]*4/3, 100)
@@ -117,7 +122,7 @@ for T in Ts:
     Q_rads_20.append(Q_rad_integrate(Em_data, 2e-8, T))
     Q_rads_30.append(Q_rad_integrate(Em_data, 3e-8, T))
     Q_subs.append(Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K, la_flux(la_fluence_data[1,0], la_time_data, 0), 1e-8, T)[0])
-    Q_conds.append(Q_cond(gas_weight, gas_Cp_data, alpha_data, 101500, 300, 1e-8, T))
+    Q_conds.append(Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, 1e-8, T))
 
 for t in times:
     Q_abss.append(Q_abs(Em_data, la_wvlng, la_flux(150, la_time_data, t), 1e-8))
@@ -193,7 +198,7 @@ plt.show()
 plt.plot(Ts, Q_subs)
 plt.ylabel('Q_sub')
 plt.yscale('log')
-plt.ylim((1e-15, 1e3))
+plt.ylim((1e-15, 1e-3))
 plt.xlabel('T')
 plt.suptitle('Q sublimation')
 plt.show()

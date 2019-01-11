@@ -219,17 +219,15 @@ def get_fluence(energy, mode, spat):
         for i in range(len(Ss)): 
             Ss[i] = Ss[i]/full_S
             fluences[i] = fluences[i]*energy/full_E
-    
-    print(Ss)
-    print(fluences)
-    
+        
     la_fluence_data = np.array((Ss, fluences))
 
     return la_fluence_data
     
 def la_flux(fluence, la_time_data, t):
     """returns flux at given time using fluence and time profile""" 
-    flux = fluence * np.interp(t, la_time_data[0], la_time_data[1], 0, 0)
+    flux = fluence * np.interp(t, la_time_data[0], la_time_data[1], 0, 0) 
+    #zero values outside impulse
     return flux
 
 #=================== END OF Laser impulse block ===============================#

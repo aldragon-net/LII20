@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
@@ -378,7 +379,7 @@ def read_gas_mixture(mixfilepath, thermpath):
                 (a1, a2, a3, a4, a5) = mixture[i].a_high[:5]
             Cp = Cp + mixture[i].molefrac*(R*(a1+a2*T+a3*T**2+a4*T**3+a5*T**4))
         return Cp
-    
+            
     def read_alpha(inpfile):
         """reads alpha coeff block from gas data file"""
         line = inpfile.readline() 
@@ -387,6 +388,17 @@ def read_gas_mixture(mixfilepath, thermpath):
         for i in range(len(data)):
              data[i] = float(data[i])
         return np.array(data)
+        
+    def read_value(inpfile):
+        """reads value from gas data file """
+        line = inpfile.readline() 
+        if line.strip() == '\n' or line.strip() == '' : return None        
+        data = line.split()
+        try:
+            value = float(data[0])
+        except Exception:
+            return None
+        return value    
         
     #end of subfucnctions block#
     
@@ -398,7 +410,12 @@ def read_gas_mixture(mixfilepath, thermpath):
             if line.strip() == '[MIXTURE]':
                 composition = read_composition(inpfile)
             if line.strip() == '[ALPHA COEFF]':
-                alpha_data = read_alpha(inpfile)                
+                alpha_data = read_alpha(inpfile)
+            if line.strip() == '[T0]':
+                T0 = read_value(inpfile)
+            if line.strip() == '[P0]':
+                P0 = read_value(inpfile)                    
+                
     inpfile.close()
     
     mixture = read_thermodat(composition, thermpath)
@@ -409,12 +426,22 @@ def read_gas_mixture(mixfilepath, thermpath):
     weight = weight*1e-3    #a.m.u. to kg/mole     
       
     gas_Cp = []
-    for T in range(200,6100, 100):
+    for T in range(200,5100, 100):
         gas_Cp.append((T, Cp_calc(mixture, T)))
     gas_Cp_data = np.array(gas_Cp)
     gas_Cp_data = gas_Cp_data.transpose()
     
-    return composition, weight, gas_Cp_data, alpha_data
+    gas_Cpint = []
+    def Cp(T):
+        """gas_Cp_function for integration"""
+        return np.interp(T, gas_Cp_data[0], gas_Cp_data[1])
+    for T in range(200,5100, 100):
+        I, __ = sp.integrate.quad(Cp, T0, T, epsrel=1e-5)
+        gas_Cpint.append((T, I)) 
+    gas_Cpint_data = np.array(gas_Cpint)
+    gas_Cpint_data = gas_Cpint_data.transpose()
+    
+    return composition, weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0
   
 #=============================================================================#
     
