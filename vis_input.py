@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from read_files import read_particles, read_laser, read_gas_mixture
+from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
 from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
 from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
@@ -17,6 +17,7 @@ particle_path = 'particles/graphite.pin'
 gas_path = 'mixtures/gas.gin' 
 therm_path = 'therm.dat'
 laser_path = 'lasers/nd-yag.lin'
+det_path = 'detectors/LIIsystem.din'
 
 N_bins = 7
 
@@ -32,6 +33,8 @@ N_bins = 7
 composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0 = read_gas_mixture(gas_path, therm_path)
 
 la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
+
+det_name, band_1, band_2, bb_s1s2 = read_detectors(det_path)
 
 la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
@@ -80,6 +83,13 @@ print('Impulse energy: ', la_energy, ' J')
 print('Spatial profile: ', la_spat_data)
 print('Time profile: ', la_time_data)
 print('Fluence distrbution: ', la_fluence_data)
+
+print('\nDETECTORS DATA')
+print('Detection system name:', det_name)
+print('Filter band 1:', band_1)
+print('Filter band 2: ', band_2)
+print('Calibration ratio 1/2:', bb_s1s2)
+
 
 
 bin_distr_x = []

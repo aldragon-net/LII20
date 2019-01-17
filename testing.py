@@ -3,7 +3,7 @@ import scipy as sp
 from scipy.stats import lognorm
 import time
 
-from read_files import read_particles, read_laser, read_gas_mixture
+from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
 from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
 from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
@@ -11,7 +11,7 @@ from groundf import alpha
 from groundf import size_prob, get_size_bins
 from groundf import get_fluence, la_flux
 
-from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond
+from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad
 
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
@@ -27,6 +27,7 @@ particle_path = 'particles/graphite.pin'
 gas_path = 'mixtures/gas.gin' 
 therm_path = 'therm.dat'
 laser_path = 'lasers/nd-yag.lin'
+det_path = 'detectors/LIIsystem.din'
 
 N_bins = 7
 
@@ -43,6 +44,8 @@ composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0 = read_
 
 la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
 
+det_name, band_1, band_2, bb_s1s2 = read_detectors(det_path)
+
 la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
 
@@ -57,6 +60,11 @@ d = 2e-8
 fluence = 3000
 
 
+def M2d(M, T):
+    """particle diameter from mass"""
+    return np.cbrt(6*M/(pi*ro(ro_data, T)))
+
+
 def get_profiles(fluence, d, timepoints):
     """solve LII problem providing T, M, ... profiles"""
 
@@ -67,8 +75,7 @@ def get_profiles(fluence, d, timepoints):
     def d2M(d, T):
         """particle mass from diameter"""
         return pi*ro(ro_data, T)*(d**3)/6
-        
-
+       
     def LIIF(Y, t):
         """function for ODEINT"""
                      
@@ -115,5 +122,31 @@ start_time = time.time()
 solution = get_profiles(fluence, d, timepoints)
 tau = time.time() - start_time
 
+
 print(solution)
-print('In ', tau)
+print('In t = ', tau)
+
+Ts = solution[:,0]
+Ms = solution[:,1]
+
+print(Ts)
+print(Ms)
+
+rads = []
+
+start_time = time.time()
+
+for i in range(len(Ts)):
+    d = M2d(Ms[i], Ts[i])
+    rad = LII_rad(Em_data, d, Ts[i], band_2)
+    rads.append(rad)
+
+tau = time.time() - start_time
+
+print(rads)
+print('In t = ', tau)  
+
+
+  
+    
+    

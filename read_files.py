@@ -9,7 +9,7 @@ Na = 6.02214076e23  #Avogadro's number
 R = 8.31446         #gas constant
 pi = 3.14159265     #Pi    
 
-#=================== Cp block =================================================#
+#=============================================================================#
 
 def read_particles(partfilepath):
     """read input parameters of particles from *.pin"""
@@ -445,6 +445,55 @@ def read_gas_mixture(mixfilepath, thermpath):
   
 #=============================================================================#
     
+def read_detectors(detfilepath):
+    """read detection system data form *.din file"""
     
+    def read_name(inpfile):
+        """reads detection system from particles data file """
+        name = inpfile.readline().strip()
+        return name
+        
+    def read_band(inpfile):
+        """reads pair of wavelengths from detector data file"""
+        line = inpfile.readline() 
+        if line.strip() == '\n' or line.strip() == '' : return None        
+        data = line.split()
+        if not len(data) == 2:
+            return None
+        try:
+            for i in range(len(data)):
+                    data[i] = float(data[i])*1e-9   #nm to meters
+        except Exception:
+            return None
+        if data[0] > data[1]:
+            data[0], data [1] = data[1], data [0]
+        return (data[0], data[1])
+        
+    def read_value(inpfile):
+        """reads value from detectors data file """
+        line = inpfile.readline() 
+        if line.strip() == '\n' or line.strip() == '' : return None        
+        data = line.split()
+        try:
+            value = float(data[0])
+        except Exception:
+            return None
+        return value
 
+    with open(detfilepath, 'r') as inpfile:
+        while True:
+            line = inpfile.readline()
+            if line == '':
+                break
+            if line.strip() == '[NAME]':
+                det_name = read_name(inpfile)
+            if line.strip() == '[BAND 1]':
+                band_1 = read_band(inpfile)
+            if line.strip() == '[BAND 2]':
+                band_2 = read_band(inpfile)
+            if line.strip() == '[BB RATIO 1/2]':
+                bb_s1s2 = read_value(inpfile)                               
+    inpfile.close()
+    
+    return det_name, band_1, band_2, bb_s1s2 
    

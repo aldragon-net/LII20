@@ -81,5 +81,21 @@ def Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, d, T):
     
     return Q_cond
     
-
+#=================== LII signal =======================================#
+  
+def LII_rad(Em_data, d, T, band):
+    """calculates radiation-cooling rate for wavelength-dependent E(m) case
+       (numerical integration)"""   
+    Em = Em_function(Em_data)
+    
+    def F(wvlng):
+        """function for integration"""
+        return Em(Em_data, wvlng) / (wvlng**6 * (np.expm1((h*c)/(wvlng*k*T)) ))
+    
+    I, __ = sp.integrate.quad(F, band[0], band[1], epsrel=1e-5)
+        #limited upper range of integration for convergence
+         
+    LII_rad = 8*pi3*d**3*h*(c**2)*I 
+    
+    return LII_rad
 
