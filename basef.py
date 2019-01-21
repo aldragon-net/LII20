@@ -70,14 +70,16 @@ def Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data,
 
 #=================== Conductive cooling ====================================#
 
-def Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, d, T):
+def Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, d, shield_f, T):
     """calculates conductive rate"""
     
     W = gas_weight
     a = alpha(alpha_data, T)
     I = np.interp(T, gas_Cpint_data[0], gas_Cpint_data[1])
             
-    Q_cond = pi*(d**2)*a*P0/(R*T0) * (R*T0/(2*pi*W))**0.5 * (R*(T-T0)/2 + I)
+    Q_cond = shield_f * pi*(d**2)*a*P0/(R*T0) \
+                      * (R*T0/(2*pi*W))**0.5 \
+                      * (R*(T-T0)/2 + I)
     
     return Q_cond
     

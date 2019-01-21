@@ -166,6 +166,9 @@ def read_particles(partfilepath):
                     part_distrib = read_distribution(inpfile)
                 if line.strip() == '[SIZE]':
                     distrib_data = read_poly(inpfile)
+                if line.strip() == '[AGGREGATION]' \
+                or line.strip() == '[AGG SHIELDING]':
+                    agg_data = read_poly(inpfile)
                 if line.strip() == '[Cp]':
                     Cp_data = read_Cp(inpfile)    
                 if line.strip() == '[DENSITY]':
@@ -199,7 +202,7 @@ def read_particles(partfilepath):
                     part_workf = read_value(inpfile)                               
     inpfile.close()                
     return (
-            part_name, part_distrib, distrib_data,
+            part_name, part_distrib, distrib_data, agg_data,
             Cp_data, ro_data, Em_data,
             va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
             ox_k_data, ox_weight, ox_dH_data,

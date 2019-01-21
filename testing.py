@@ -8,7 +8,7 @@ from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp
 from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import alpha
-from groundf import size_prob, get_size_bins
+from groundf import size_prob, get_size_bins, get_shielding
 from groundf import get_fluence, la_flux
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad
@@ -32,7 +32,7 @@ det_path = 'detectors/LIIsystem.din'
 N_bins = 7
 
 (
- part_name, part_distrib, distrib_data,
+ part_name, part_distrib, distrib_data, agg_data,
  Cp_data, ro_data, Em_data,
  va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
  ox_k_data, ox_weight, ox_dH_data,
@@ -48,6 +48,7 @@ det_name, band_1, band_2, bb_s1s2 = read_detectors(det_path)
 
 la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
+shield_f = get_shielding(agg_data)
 
 Cp = Cp_function(Cp_data)
 ro = ro_function(ro_data)
@@ -95,7 +96,8 @@ def get_profiles(fluence, d, timepoints):
         Q = Q_abs(Em_data, la_wvlng, flux, d)                         \
           - Q_rad_simple(Em_data[0], d, T)                            \
           - Q_sub                                                     \
-          - Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, d, T) \
+          - Q_cond(gas_weight, gas_Cpint_data,                        \
+                   alpha_data, P0, T0, d, shield_f, T)                \
           + Q_ox                                                      \
           + Q_ann                                                     \
           - Q_therm

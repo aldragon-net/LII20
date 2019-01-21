@@ -194,6 +194,19 @@ def get_size_bins(part_distrib, distrib_data, N_bins):
   
     return size_data, bin_width
     
+def get_shielding(agg_data):
+    """calculates shielding coefficient from aggregate data
+       TODO: shielding from fractal parameters"""
+    if agg_data.shape[0] == 1:
+        shielding = agg_data[0]
+    elif agg_data.shape[0] == 4:
+        N, kf, Df, ov = agg_data[0], agg_data[1], agg_data[2], agg_data[3]
+        shielding = 1 #!!!TODO: function of shielding
+    else:
+        return None  #case of incorrect format of input data
+    
+    return shielding
+    
 
 #=================== END OF size distribution block ===========================#
 
