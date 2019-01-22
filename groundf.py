@@ -245,5 +245,16 @@ def la_flux(fluence, la_time_data, t):
 
 #=================== END OF Laser impulse block ===============================#
 
+#=================== M-d-M conversion =========================================#
+def M2d(ro_data, M, T):
+    """particle diameter from mass"""
+    ro = ro_function(ro_data)
+    return np.cbrt(6*M/(pi*ro(ro_data, T)))
 
+def d2M(ro_data, d, T):
+        """particle mass from diameter"""
+        ro = ro_function(ro_data)
+        return pi*ro(ro_data, T)*(d**3)/6
+
+#=================== END OF M-d-M conversion ===============================#
 

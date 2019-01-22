@@ -2,6 +2,9 @@ import numpy as np
 import scipy as sp
 from scipy.stats import lognorm
 import time
+import hashlib
+
+import matplotlib.pyplot as plt
 
 from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
 from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
@@ -10,6 +13,7 @@ from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import alpha
 from groundf import size_prob, get_size_bins, get_shielding
 from groundf import get_fluence, la_flux
+from groundf import d2M, M2d
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad
 
@@ -25,9 +29,9 @@ pi3 = pi**3
 
 particle_path = 'particles/graphite.pin'
 gas_path = 'mixtures/gas.gin' 
-therm_path = 'therm.dat'
 laser_path = 'lasers/nd-yag.lin'
 det_path = 'detectors/LIIsystem.din'
+therm_path = 'therm.dat'
 
 N_bins = 7
 
@@ -54,35 +58,63 @@ Cp = Cp_function(Cp_data)
 ro = ro_function(ro_data)
 Em = Em_function(Em_data)
 
-timepoints = np.linspace(0, 1e-6, 1001)
+timepoints = np.linspace(0, 1e-6, 2501)
 
 d = 2e-8
 
 fluence = 3000
 
+sizeset_small = np.linspace(0.5e-9, 20e-9, 40)
+sizeset_med = np.linspace(21e-9, 60e-9, 40)
+sizeset_big = np.linspace(62e-9, 100e-9, 20)
 
-def M2d(M, T):
-    """particle diameter from mass"""
-    return np.cbrt(6*M/(pi*ro(ro_data, T)))
+sizeset = np.hstack((sizeset_small, sizeset_med, sizeset_big))
+
+print(sizeset)
+
+#хэширование#
+
+code_files = ('groundf.py', 'basef.py', 'solver.py')
+self_code = ''
+for filepath in code_files:
+    with open(filepath, 'r') as f:
+        filetext = f.read()
+    f.close()
+    self_code = self_code + filetext
+
+self_code_utf = self_code.encode()
+
+self_hash = hashlib.md5()
+self_hash.update(self_code_utf)
+self_md5 = self_hash.digest()
+print('Self hash = ', self_md5)
+
+input_files = (particle_path, gas_path, laser_path, det_path, therm_path)
+input_data = ''
+for filepath in input_files:
+    with open(filepath, 'r') as f:
+        filetext = f.read()
+    f.close()
+    input_data = input_data + filetext
+
+input_data_utf = input_data.encode()   
+
+inp_hash = hashlib.md5()
+inp_hash.update(input_data_utf)
+inp_md5 = inp_hash.digest()
+print('Input hash = ', inp_md5)
+
 
 
 def get_profiles(fluence, d, timepoints):
     """solve LII problem providing T, M, ... profiles"""
-
-    def M2d(M, T):
-        """particle diameter from mass"""
-        return np.cbrt(6*M/(pi*ro(ro_data, T)))
-    
-    def d2M(d, T):
-        """particle mass from diameter"""
-        return pi*ro(ro_data, T)*(d**3)/6
-       
+         
     def LIIF(Y, t):
         """function for ODEINT"""
                      
         (T, M, N_ox, N_ann, charge) = Y
         
-        d = M2d(M, T)
+        d = M2d(ro_data, M, T)
         
         flux = la_flux(fluence, la_time_data, t)
         
@@ -112,7 +144,7 @@ def get_profiles(fluence, d, timepoints):
                 
         return dYdt
         
-    M0 = d2M(d, T0)
+    M0 = d2M(ro_data, d, T0)
     
     Y0 = (T0, M0, 0, 0, 0)
         
@@ -139,16 +171,47 @@ rads = []
 start_time = time.time()
 
 for i in range(len(Ts)):
-    d = M2d(Ms[i], Ts[i])
-    rad = LII_rad(Em_data, d, Ts[i], band_2)
+    d = M2d(ro_data, Ms[i], Ts[i])
+    rad = LII_rad(Em_data, d, Ts[i], band_1)
     rads.append(rad)
 
 tau = time.time() - start_time
 
-print(rads)
 print('In t = ', tau)  
 
+print(type(Ts))
 
-  
+signals_cache = np.zeros((sizeset.shape[0], timepoints.shape[0]))
+
+for i in range(sizeset.shape[0]):
+    d0 = sizeset[i]
+    solution = get_profiles(fluence, d0, timepoints)
+    Ts = solution[:,0]
+    Ms = solution[:,1]
+    rads = np.zeros((len(Ts)))
+    for j in range(len(Ts)):
+        d = M2d(ro_data, Ms[j], Ts[j])
+        rads[j] = LII_rad(Em_data, d, Ts[j], band_1)
+    signals_cache[i] = rads
+    print('Calculate signal for size d = ', d0)
+    
+print(signals_cache)
+
+print(signals_cache.shape)
+
+plt.plot(timepoints, signals_cache[10], 'r-', 
+         timepoints, signals_cache[20], 'g-',
+         timepoints, signals_cache[40], 'b-',
+         timepoints, signals_cache[80], 'o-',)
+plt.legend(('1', '2', '3', '4'))
+plt.yscale('log')
+plt.ylabel('I')
+plt.xlabel('t')
+plt.suptitle('signals')
+plt.show()
+
+
+
+
     
     
