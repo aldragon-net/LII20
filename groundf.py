@@ -2,6 +2,9 @@ import numpy as np
 from scipy.stats import lognorm
 from math import exp
 
+from read_files import read_settings
+from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
+
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
 h = 6.62607015e-34  #Planck's constant
@@ -194,6 +197,26 @@ def get_size_bins(part_distrib, distrib_data, N_bins):
   
     return size_data, bin_width
     
+def get_bin_distrib(part_distrib, distrib_data, sizeset):
+    """returns probabilities of bins"""
+            
+    if part_distrib == 'LOGNORMAL':
+        bnds = np.zeros((sizeset.shape[0]+1))   
+        bnds[0] = sizeset[0]/2
+        for i in range(1, bnds.shape[0]-1):
+            bnds[i] = (sizeset[i]+sizeset[i-1])/2
+        bnds[-1] = (3*sizeset[-1] - sizeset[-2])/2
+        print(sizeset)
+        print(bnds)
+        probs = []
+        for i in range(bnds.shape[0] - 1):
+            prob = lognorm.cdf(bnds[i+1], distrib_data[1], 0, distrib_data[0]*1e-9) \
+                   - lognorm.cdf(bnds[i], distrib_data[1], 0, distrib_data[0]*1e-9)    
+            probs.append(prob)
+            print(prob)
+        bin_distrib = np.array(probs) 
+    return bin_distrib
+    
 def get_shielding(agg_data):
     """calculates shielding coefficient from aggregate data
        TODO: shielding from fractal parameters"""
@@ -248,13 +271,45 @@ def la_flux(fluence, la_time_data, t):
 #=================== M-d-M conversion =========================================#
 def M2d(ro_data, M, T):
     """particle diameter from mass"""
-    ro = ro_function(ro_data)
     return np.cbrt(6*M/(pi*ro(ro_data, T)))
 
 def d2M(ro_data, d, T):
-        """particle mass from diameter"""
-        ro = ro_function(ro_data)
-        return pi*ro(ro_data, T)*(d**3)/6
+    """particle mass from diameter"""
+    return pi*ro(ro_data, T)*(d**3)/6
 
 #=================== END OF M-d-M conversion ===============================#
+
+particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
+therm_path = 'mixtures/therm.dat'
+
+(
+ part_name, part_distrib, distrib_data, agg_data,
+ Cp_data, ro_data, Em_data,
+ va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
+ ox_k_data, ox_weight, ox_dH_data,
+ ann_k_data, ann_dH, ann_Nd_frac,
+ part_workf
+           ) = read_particles(particle_path)
+
+(
+ composition, gas_weight, gas_Cp_data, gas_Cpint_data,
+ alpha_data, T0, P0
+                   ) = read_gas_mixture(gas_path, therm_path)
+
+(
+ la_name, la_mode, la_wvlng, la_energy,
+ la_spat_data, la_time_data
+                           ) = read_laser(laser_path)
+
+det_name, band_1, band_2, bb_s1s2 = read_detectors(det_path)
+
+Cp = Cp_function(Cp_data)
+ro = ro_function(ro_data)
+Em = Em_function(Em_data)
+
+fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
+print(fluence_data)
+
+
+
 

@@ -6,16 +6,17 @@ import hashlib
 
 import matplotlib.pyplot as plt
 
+from read_files import read_settings
 from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
-from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
-from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
-from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
+from groundf import Cp #Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
+from groundf import ro #ro_function, ro_1_single, ro_poly_single, ro_poly
+from groundf import Em #Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import alpha
-from groundf import size_prob, get_size_bins, get_shielding
+from groundf import size_prob, get_size_bins, get_bin_distrib, get_shielding
 from groundf import get_fluence, la_flux
 from groundf import d2M, M2d
 
-from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad
+from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad_wide, LII_rad_narrow
 
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
@@ -27,11 +28,10 @@ pi = 3.14159265     #Pi
 
 pi3 = pi**3
 
-particle_path = 'particles/graphite.pin'
-gas_path = 'mixtures/gas.gin' 
-laser_path = 'lasers/nd-yag.lin'
-det_path = 'detectors/LIIsystem.din'
-therm_path = 'therm.dat'
+
+
+particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
+therm_path = 'mixtures/therm.dat'
 
 N_bins = 7
 
@@ -53,10 +53,6 @@ det_name, band_1, band_2, bb_s1s2 = read_detectors(det_path)
 la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
 shield_f = get_shielding(agg_data)
-
-Cp = Cp_function(Cp_data)
-ro = ro_function(ro_data)
-Em = Em_function(Em_data)
 
 timepoints = np.linspace(0, 1e-6, 2501)
 
@@ -126,7 +122,7 @@ def get_profiles(fluence, d, timepoints):
         Q_therm = 0
         
         Q = Q_abs(Em_data, la_wvlng, flux, d)                         \
-          - Q_rad_simple(Em_data[0], d, T)                            \
+          - Q_rad_simple(Em_data, d, T)                            \
           - Q_sub                                                     \
           - Q_cond(gas_weight, gas_Cpint_data,                        \
                    alpha_data, P0, T0, d, shield_f, T)                \
@@ -152,49 +148,34 @@ def get_profiles(fluence, d, timepoints):
     
     return solution
 
-start_time = time.time()    
-solution = get_profiles(fluence, d, timepoints)
-tau = time.time() - start_time
 
-
-print(solution)
-print('In t = ', tau)
-
-Ts = solution[:,0]
-Ms = solution[:,1]
-
-print(Ts)
-print(Ms)
-
-rads = []
-
-start_time = time.time()
-
-for i in range(len(Ts)):
-    d = M2d(ro_data, Ms[i], Ts[i])
-    rad = LII_rad(Em_data, d, Ts[i], band_1)
-    rads.append(rad)
-
-tau = time.time() - start_time
-
-print('In t = ', tau)  
-
-print(type(Ts))
-
-signals_cache = np.zeros((sizeset.shape[0], timepoints.shape[0]))
-
-for i in range(sizeset.shape[0]):
-    d0 = sizeset[i]
-    solution = get_profiles(fluence, d0, timepoints)
+def get_LII_signal(Em_data, band, solution):
+    """calculate LII signal for given time profiles of T and """
     Ts = solution[:,0]
     Ms = solution[:,1]
     rads = np.zeros((len(Ts)))
     for j in range(len(Ts)):
         d = M2d(ro_data, Ms[j], Ts[j])
-        rads[j] = LII_rad(Em_data, d, Ts[j], band_1)
-    signals_cache[i] = rads
-    print('Calculate signal for size d = ', d0)
+        rads[j] = LII_rad_narrow(Em_data, d, Ts[j], band)
+    return rads
+
+def get_LII_cache(sizeset):
+    """generate set of LII signals for given sizeset"""
+    signals_cache = np.zeros((sizeset.shape[0], timepoints.shape[0]))
+    print('Generating signals cache...')
+    for i in range(sizeset.shape[0]):
+        d0 = sizeset[i]
+        for j in range(la_fluence_data.shape[-1]):
+            fl_frac = la_fluence_data[0,j]
+            fluence = la_fluence_data[1,j]
+            solution = get_profiles(fluence, d0, timepoints)
+            rads = get_LII_signal(Em_data, band_1, solution)
+            signals_cache[i] = signals_cache[i] + rads*fl_frac
+        print(i*'*'+(110-i)*'-', end='\r', flush=True)
+    return signals_cache
     
+signals_cache = get_LII_cache(sizeset)
+
 print(signals_cache)
 
 print(signals_cache.shape)
@@ -210,6 +191,22 @@ plt.xlabel('t')
 plt.suptitle('signals')
 plt.show()
 
+probs = get_bin_distrib(part_distrib, [20, 0.16], sizeset)
+
+probs2 = get_bin_distrib(part_distrib, [40, 0.16], sizeset)
+
+
+signal = np.matmul(signals_cache.T, probs)
+signal = signal / np.amax(signal)
+signal2 = np.matmul(signals_cache.T, probs2)
+signal2 = signal2 / np.amax(signal2)
+
+plt.plot(timepoints, signal, 'r-',timepoints, signal2, 'g-',)
+plt.legend(('1'))
+plt.ylabel('I')
+plt.xlabel('t')
+plt.suptitle('signals')
+plt.show()
 
 
 

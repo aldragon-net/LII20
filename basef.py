@@ -1,10 +1,10 @@
 import numpy as np
 import scipy as sp
 
-from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
-from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
+from groundf import Cp# Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
+from groundf import ro# ro_function, ro_1_single, ro_poly_single, ro_poly
 
-from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
+from groundf import Em #Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import va_weight, va_dH, va_P_function, va_P_poly, va_P_CC
 
 from groundf import alpha 
@@ -23,22 +23,22 @@ pi3 = pi**3
  
 def Q_abs(Em_data, la_wvlng, flux, d):
     """calculates radiation heating_rate"""   
-    Em = Em_function(Em_data)
+    #Em = Em_function(Em_data)
     Q_abs = flux * (pi**2)*(d**3)*Em(Em_data, la_wvlng) / la_wvlng
     return Q_abs
     
 
 #=================== Radiation cooling =======================================#
  
-def Q_rad_simple(Em, d, T):
+def Q_rad_simple(Em_data, d, T):
     """calculates radiation-cooling rate for constant E(m) case"""   
-    Q_rad = (198.97*pi3*d**3*(k*T)**5 / (h*(h*c)**3))*Em 
+    Q_rad = (198.97*pi3*d**3*(k*T)**5 / (h*(h*c)**3)) * Em_data[0] 
     return Q_rad
     
 def Q_rad_integrate(Em_data, d, T):
     """calculates radiation-cooling rate for wavelength-dependent E(m) case
        (numerical integration)"""   
-    Em = Em_function(Em_data)
+    #Em = Em_function(Em_data)
     
     def F(wvlng):
         """function for integration"""
@@ -85,17 +85,31 @@ def Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, d, shield_f, T):
     
 #=================== LII signal =======================================#
   
-def LII_rad(Em_data, d, T, band):
-    """calculates radiation-cooling rate for wavelength-dependent E(m) case
-       (numerical integration)"""   
-    Em = Em_function(Em_data)
+def LII_rad_narrow(Em_data, d, T, band):
+    """calculates LII signal for narrow band (mean value in band)""" 
+   
+    def F(wvlng):
+        """function for integration"""
+        return Em(Em_data, wvlng) / (wvlng**6 * (np.expm1((h*c)/(wvlng*k*T)) ))
+    
+    I = (band[1] - band[0]) * (F(band[0]) + F(band[1]))/2
+        #integral approximation
+         
+    LII_rad = 8*pi3*d**3*h*(c**2)*I 
+    
+    return LII_rad
+  
+  
+def LII_rad_wide(Em_data, d, T, band):
+    """calculates LII signal for wide band (integration over band)"""  
+    #Em = Em_function(Em_data)
     
     def F(wvlng):
         """function for integration"""
         return Em(Em_data, wvlng) / (wvlng**6 * (np.expm1((h*c)/(wvlng*k*T)) ))
     
     I, __ = sp.integrate.quad(F, band[0], band[1], epsrel=1e-5)
-        #limited upper range of integration for convergence
+        #precise integration
          
     LII_rad = 8*pi3*d**3*h*(c**2)*I 
     

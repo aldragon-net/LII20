@@ -11,6 +11,26 @@ pi = 3.14159265     #Pi
 
 #=============================================================================#
 
+def read_settings(settingspath):
+    """read settings from settings file"""
+    with open(settingspath, 'r') as inpfile:
+        while True:
+            line = inpfile.readline()
+            if line == '':
+                break
+            if line.split()[0] == 'PARTICLES':
+                partfilepath = 'particles/' + line.split()[1]
+            if line.split()[0] == 'MIXTURE':
+                mixfilepath = 'mixtures/' + line.split()[1]
+            if line.split()[0] == 'LASER':
+                lasfilepath = 'lasers/' + line.split()[1]
+            if line.split()[0] == 'DETECTOR':
+                detfilepath = 'detectors/' + line.split()[1]
+    inpfile.close()
+    return partfilepath, mixfilepath, lasfilepath, detfilepath
+              
+#=============================================================================#
+
 def read_particles(partfilepath):
     """read input parameters of particles from *.pin"""
     
@@ -339,11 +359,11 @@ def read_gas_mixture(mixfilepath, thermpath):
                 weight = weight + elements[(s[0:2]).strip()]*int((s[4:5]).strip())
         return weight
  
-    def read_thermodat(composition, file):
+    def read_thermodat(composition, thermpath):
         """read thermodynamical properties of mixture"""
         mixture = []
         for i in range(len(composition)):
-            thermdat = open('therm.dat', 'r')
+            thermdat = open(thermpath, 'r')
             while True:
                 line = thermdat.readline()                   #1st line
                 if line[:18].split()[0] == composition[i][0]:
