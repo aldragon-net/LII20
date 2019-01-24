@@ -308,7 +308,6 @@ ro = ro_function(ro_data)
 Em = Em_function(Em_data)
 
 fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
-print(fluence_data)
 
 
 
