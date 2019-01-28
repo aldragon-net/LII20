@@ -206,14 +206,11 @@ def get_bin_distrib(part_distrib, distrib_data, sizeset):
         for i in range(1, bnds.shape[0]-1):
             bnds[i] = (sizeset[i]+sizeset[i-1])/2
         bnds[-1] = (3*sizeset[-1] - sizeset[-2])/2
-        print(sizeset)
-        print(bnds)
         probs = []
         for i in range(bnds.shape[0] - 1):
             prob = lognorm.cdf(bnds[i+1], distrib_data[1], 0, distrib_data[0]*1e-9) \
                    - lognorm.cdf(bnds[i], distrib_data[1], 0, distrib_data[0]*1e-9)    
             probs.append(prob)
-            print(prob)
         bin_distrib = np.array(probs) 
     return bin_distrib
     

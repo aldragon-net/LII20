@@ -27,7 +27,7 @@ pi = 3.14159265     #Pi
 pi3 = pi**3
 
 
-def get_profiles(part_data, mix_data, la_data, fluence, d, timepoints):
+def get_LII_solution(part_data, mix_data, la_data, fluence, d, timepoints):
     """solve LII problem providing T, M, ... profiles"""
         
     #unpacking data:
@@ -105,12 +105,12 @@ def get_LII_cache(part_data, mix_data, la_data, det_data, sizeset, timepoints):
         for j in range(la_fluence_data.shape[-1]):
             fl_frac = la_fluence_data[0,j]
             fluence = la_fluence_data[1,j]
-            solution = get_profiles(part_data, mix_data, la_data,
+            solution = get_LII_solution(part_data, mix_data, la_data,
                                     fluence, d0, timepoints)
             rads = get_LII_signal(ro_data, Em_data, band_1, solution)
             signals_cache[i] = signals_cache[i] + rads*fl_frac
         progress = round((i+1)*72/N_of_sizes)
-        #print(progress*'█'+(72-progress)*'░', end='\r', flush=True)
+        print(progress*'█'+(72-progress)*'░', end='\r', flush=True)
     tau = time.time() - start_time
     print('\nDone! in ', tau, 'seconds\n\n')
     return signals_cache

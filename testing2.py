@@ -15,7 +15,9 @@ from groundf import alpha
 from groundf import size_prob, get_size_bins, get_bin_distrib, get_shielding
 from groundf import get_fluence, la_flux
 from groundf import d2M, M2d
-from solver import get_profiles, get_LII_signal, get_LII_cache
+from solver import get_LII_cache
+
+from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad_wide, LII_rad_narrow
 
@@ -141,22 +143,37 @@ plt.show()
 
 probs = get_bin_distrib(part_distrib, [20, 0.16], sizeset)
 
-probs2 = get_bin_distrib(part_distrib, [40, 0.16], sizeset)
+probs2 = get_bin_distrib(part_distrib, [20, 0.09], sizeset)
 
 
 signal = np.matmul(signals_cache.T, probs)
 signal = signal / np.amax(signal)
 signal2 = np.matmul(signals_cache.T, probs2)
-signal2 = signal2 / np.amax(signal2)
+signal2_norm = signal2 / np.amax(signal2)
 
-plt.plot(timepoints, signal, 'r-',timepoints, signal2, 'g-',)
+
+
+CMD_guess = search_for_CMD(part_distrib, [30, 0.09], sizeset, signals_cache, signal2)
+print('Guessed CMD = {:.3} nm'.format(CMD_guess))
+
+sigma_guess = search_for_sigma(part_distrib, [20, 0.06], sizeset, signals_cache, signal2)
+print('Guessed sigma = {:.3}'.format(sigma_guess))
+
+CMD_sigma_guess = search_for_CMD_sigma(part_distrib, [40, 0.23], sizeset, signals_cache, signal2)
+
+print('Guessed CMD = {:.5} nm, sigma = {:.3}'.format(CMD_sigma_guess[0], CMD_sigma_guess[1]))
+
+
+probs_guess = get_bin_distrib(part_distrib, [CMD_guess, 0.09], sizeset)
+signal_guess = np.matmul(signals_cache.T, probs_guess)
+signal_guess = signal_guess / np.amax(signal_guess)
+
+plt.plot(timepoints, signal, 'r-',timepoints, signal2_norm, 'g-', timepoints, signal_guess, 'b-')
 plt.legend(('1'))
 plt.ylabel('I')
 plt.xlabel('t')
 plt.suptitle('signals')
 plt.show()
-
-
 
     
     
