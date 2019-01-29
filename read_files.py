@@ -491,7 +491,19 @@ def read_detectors(detfilepath):
         if data[0] > data[1]:
             data[0], data [1] = data[1], data [0]
         return (data[0], data[1])
-        
+
+    def read_poly(inpfile):
+        """reads single coefficients line from particles data file """
+        line = inpfile.readline() 
+        if line.strip() == '\n' or line.strip() == '' : return None        
+        data = line.split()
+        try:
+            for i in range(len(data)):
+                    data[i] = float(data[i])
+        except Exception:
+            return None
+        return np.array(data)        
+    
     def read_value(inpfile):
         """reads value from detectors data file """
         line = inpfile.readline() 
@@ -515,7 +527,7 @@ def read_detectors(detfilepath):
             if line.strip() == '[BAND 2]':
                 band_2 = read_band(inpfile)
             if line.strip() == '[BB RATIO 1/2]':
-                bb_s1s2 = read_value(inpfile)                               
+                bb_s1s2 = read_poly(inpfile)                               
     inpfile.close()
     
     return det_name, band_1, band_2, bb_s1s2 

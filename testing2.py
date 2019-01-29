@@ -114,7 +114,7 @@ part_data = (
             )
 la_data = (la_wvlng, la_fluence_data, la_time_data) 
 mix_data = (composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0)
-det_data = (det_name, band_1, band_2, bb_s1s2)          
+det_data = (band_1, band_2, bb_s1s2)          
 
 
 textinp = str((part_data, mix_data, la_data, det_data))
@@ -143,7 +143,7 @@ plt.show()
 
 probs = get_bin_distrib(part_distrib, [20, 0.16], sizeset)
 
-probs2 = get_bin_distrib(part_distrib, [20, 0.09], sizeset)
+probs2 = get_bin_distrib(part_distrib, [20, 0.16], sizeset)
 
 
 signal = np.matmul(signals_cache.T, probs)

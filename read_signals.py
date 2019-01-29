@@ -1,6 +1,22 @@
 import numpy as np
 import os
 
+from tkinter import *
+from tkinter import filedialog
+from tkinter import font
+
+def ask_for_signals():
+    root = Tk()
+    root.withdraw()
+    root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file 1",filetypes = (("csv files","*.csv"),("all files","*.*")))
+    print ('Signal 1 file: {0}'.format(root.filename))
+    signal_path_1 = root.filename
+    root.filename =  filedialog.askopenfilename(initialdir = "/",title = "Select file 2",filetypes = (("csv files","*.csv"),("all files","*.*")))
+    print ('Signal 2 file: {0}'.format(root.filename))
+    signal_path_2 = root.filename     
+    root.destroy()
+    return signal_path_1, signal_path_2
+
 def read_LIIfile(filepath):
     """read signle file"""
     data = []

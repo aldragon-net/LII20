@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
-from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
-from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
-from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
+from read_files import read_particles, read_laser, read_gas_mixture, read_detectors, read_settings
+from groundf import Cp, Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
+from groundf import ro, ro_function, ro_1_single, ro_poly_single, ro_poly
+from groundf import Em, Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import va_P_function, va_P_poly, va_P_CC
 from groundf import alpha
 from groundf import size_prob, get_size_bins, get_shielding
@@ -13,15 +13,12 @@ from groundf import get_fluence, la_flux
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond
                     
                   
-particle_path = 'particles/graphite.pin'
-gas_path = 'mixtures/gas.gin' 
-therm_path = 'therm.dat'
-laser_path = 'lasers/nd-yag.lin'
-det_path = 'detectors/LIIsystem.din'
+particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
+therm_path = 'mixtures/therm.dat'
 
 N_bins = 7
 
-(
+part_data = (
  part_name, part_distrib, distrib_data, agg_data,
  Cp_data, ro_data, Em_data,
  va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
@@ -30,19 +27,15 @@ N_bins = 7
  part_workf
            ) = read_particles(particle_path)
 
-composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0 = read_gas_mixture(gas_path, therm_path)
+mix_data = (composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0) = read_gas_mixture(gas_path, therm_path)
 
-la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data = read_laser(laser_path)
+la_data = (la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data) = read_laser(laser_path)
 
-det_name, band_1, band_2, bb_s1s2 = read_detectors(det_path)
+det_data = (det_name, band_1, band_2, bb_s1s2) = read_detectors(det_path)
 
 la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
-shield_f = get_shielding
-
-Cp = Cp_function(Cp_data)
-ro = ro_function(ro_data)
-Em = Em_function(Em_data)
+shield_f = get_shielding(agg_data)
 
 print('PARTICLES DATA')
 print('Particles name: ', part_name)
@@ -111,6 +104,9 @@ wvlngs = range(300, 900, 10)
 sizes = np.linspace(0, size_data[1][-1]+size_data[1][0]/2, 100)
 times = np.linspace(-la_time_data[0,-1]/3, la_time_data[0,-1]*4/3, 100)
 
+testQ = Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, 1e-8, shield_f, 2000)
+print('is Q working? Yes, ', testQ)
+
 Cps = []
 ros = []
 alphas = []
@@ -129,11 +125,11 @@ for T in Ts:
     ros.append(ro(ro_data, T))
     alphas.append(alpha(alpha_data, T))
     Q_rads_10.append(Q_rad_integrate(Em_data, 1e-8, T))
-    Q_simp_rads_10.append(Q_rad_simple(Em(Em_data, 500), 1e-8, T))
+    Q_simp_rads_10.append(Q_rad_simple(Em_data, 1e-8, T))
     Q_rads_20.append(Q_rad_integrate(Em_data, 2e-8, T))
     Q_rads_30.append(Q_rad_integrate(Em_data, 3e-8, T))
     Q_subs.append(Q_dM_sub(va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K, la_flux(la_fluence_data[1,0], la_time_data, 0), 1e-8, T)[0])
-    Q_conds.append(Q_cond(gas_weight, gas_Cpint_data, alpha_data, P0, T0, 1e-8, shield_f, T))
+    Q_conds.append(Q_cond(gas_weight, gas_Cpint_data,alpha_data, P0, T0, 1e-8, shield_f, T))
 
 for t in times:
     Q_abss.append(Q_abs(Em_data, la_wvlng, la_flux(150, la_time_data, t), 1e-8))

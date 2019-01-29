@@ -11,11 +11,19 @@ import hashlib
 import matplotlib.pyplot as plt
 
 from read_files import read_settings
-from read_signals import read_LIIfile
-from clean_signals import subtract_offset, flip_signal, SG_smooth_signal, cut_tails
+from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
+from read_signals import ask_for_signals, read_LIIfile
+
+from groundf import size_prob, get_size_bins, get_bin_distrib, get_shielding
+from groundf import get_fluence, la_flux
+from groundf import d2M, M2d
+from solver import get_LII_cache
 
 
-from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma
+from clean_signals import process_signals, normalize_signals
+
+
+from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma, search_for_Em
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad_wide, LII_rad_narrow
 
@@ -29,76 +37,65 @@ pi = 3.14159265     #Pi
 
 pi3 = pi**3
 
-signal_path_1 = 'C1ut26-100000.csv'
-signal_path_2 = 'C2ut26-200000.csv'
+particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
+therm_path = 'mixtures/therm.dat'
+
+N_bins = 7
+
+part_data = (
+ part_name, part_distrib, distrib_data, agg_data,
+ Cp_data, ro_data, Em_data,
+ va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
+ ox_k_data, ox_weight, ox_dH_data,
+ ann_k_data, ann_dH, ann_Nd_frac,
+ part_workf
+           ) = read_particles(particle_path)
+
+mix_data = (composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0) = read_gas_mixture(gas_path, therm_path)
+
+la_data = (la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data) = read_laser(laser_path)
+
+det_data = (det_name, band_1, band_2, bb_s1s2) = read_detectors(det_path)
+
+la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
+size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
+shield_f = get_shielding(agg_data)
+
+signal_path_1, signal_path_2 = ask_for_signals()
 
 signal_1 = read_LIIfile(signal_path_1)
-shifted_signal_1, offset_1 = subtract_offset(signal_1)
-flipped_signal_1, is_signal_1_flipped = flip_signal(shifted_signal_1)
-smoothed_signal_1 = SG_smooth_signal(flipped_signal_1)
-trunc_signal_1 = cut_tails(smoothed_signal_1)
-offset_line_1 =[[signal_1[0,0]*1e9, signal_1[0,-1]*1e9], [offset_1, offset_1]] 
-
 signal_2 = read_LIIfile(signal_path_2)
-shifted_signal_2, offset_2 = subtract_offset(signal_2)
-flipped_signal_2, is_signal_2_flipped = flip_signal(shifted_signal_2)
-smoothed_signal_2 = SG_smooth_signal(flipped_signal_2)
-trunc_signal_2 = cut_tails(smoothed_signal_2)
-offset_line_2 =[[signal_2[0,0]*1e9, signal_2[0,-1]*1e9], [offset_2, offset_2]] 
 
-plt.subplot(231)
-plt.plot(offset_line_1[0], offset_line_1[1], 'k--',
-         signal_1[0]*1e9, signal_1[1], 'r-')       
-plt.ylabel('I, V')
+trunc_signal_1, trunc_signal_2 = process_signals(signal_1, signal_2)
 
-plt.subplot(234)
-plt.plot(offset_line_2[0], offset_line_2[1], 'k--',
-         signal_2[0]*1e9, signal_2[1], 'b-')
-plt.ylabel('I, V')
+signal_1, signal_2 = normalize_signals(trunc_signal_1, trunc_signal_2, band_1, band_2, bb_s1s2)
+
+plt.plot(signal_1[0], signal_1[1], 'r-', signal_2[0], signal_2[1],'b-')
+plt.ylabel('I, a.u.')
 plt.xlabel('t')
-
-plt.subplot(232)
-plt.plot([flipped_signal_1[0,0]*1e9, flipped_signal_1[0,-1]*1e9], [0,0], 'k--',
-         flipped_signal_1[0]*1e9, flipped_signal_1[1], 'r-',
-         smoothed_signal_1[0]*1e9, smoothed_signal_1[1], 'y-')
-
-plt.subplot(235)
-plt.plot([flipped_signal_2[0,0]*1e9, flipped_signal_2[0,-1]*1e9], [0,0], 'k--',
-         flipped_signal_2[0]*1e9, flipped_signal_2[1], 'b-',
-         smoothed_signal_2[0]*1e9, smoothed_signal_2[1], 'y-')       
-plt.xlabel('t')
-
-plt.subplot(233)
-plt.plot([trunc_signal_1[0,0]*1e9, trunc_signal_1[0,-1]*1e9], [0,0], 'k--',
-         trunc_signal_1[0]*1e9, trunc_signal_1[1], 'r-')
-
-plt.subplot(236)
-plt.plot([trunc_signal_2[0,0]*1e9, trunc_signal_2[0,-1]*1e9], [0,0], 'k--',
-         trunc_signal_2[0]*1e9, trunc_signal_2[1], 'b-')      
-plt.xlabel('t')
-
-plt.suptitle('Input LII signals')
+plt.suptitle('Normalized signals')
 plt.show()
 
+part_data = (           
+             Cp_data, ro_data, Em_data, shield_f,
+             va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
+             ox_k_data, ox_weight, ox_dH_data,
+             ann_k_data, ann_dH, ann_Nd_frac,
+             part_workf
+            )
+la_data = (la_wvlng, la_fluence_data, la_time_data) 
+mix_data = (composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0)
+det_data = (det_name, band_1, band_2, bb_s1s2) 
 
 
-plt.plot(signal_1[0], signal_1[1], 'r-',
-         offset_line_1[0], offset_line_1[1], 'g--')
-plt.legend(('signal'))
-plt.ylabel('I')
-plt.xlabel('t')
-plt.suptitle('signals')
-plt.show()
+Em_guess = search_for_Em(part_data, mix_data, la_data, det_data, signal_1, signal_2)
 
-plt.plot([flipped_signal_1[0,0], flipped_signal_1[0,-1]], [0,0], 'k--',
-          flipped_signal_1[0], flipped_signal_1[1], 'r-',
-          smoothed_signal_1[0], smoothed_signal_1[1], 'b-',
-          trunc_signal_1[0], trunc_signal_1[1], 'g-')
-plt.legend(('signal'))
-plt.ylabel('I')
-plt.xlabel('t')
-plt.suptitle('signals')
-plt.show()
+print('E(m) guess =', Em_guess)
+input()
+
+
+
+
 
 # probs = get_bin_distrib(part_distrib, [20, 0.16], sizeset)
 
