@@ -36,7 +36,7 @@ pi3 = pi**3
 particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
 therm_path = 'mixtures/therm.dat'
 
-N_bins = 7
+N_bins = 3
 
 part_data = (
  part_name, part_distrib, distrib_data, agg_data,
@@ -153,7 +153,7 @@ signal2_norm = signal2 / np.amax(signal2)
 
 
 
-CMD_guess = search_for_CMD(part_distrib, [30, 0.09], sizeset, signals_cache, signal2)
+CMD_guess = search_for_CMD(part_distrib, [30, 0.16], sizeset, signals_cache, signal2)
 print('Guessed CMD = {:.3} nm'.format(CMD_guess))
 
 sigma_guess = search_for_sigma(part_distrib, [20, 0.06], sizeset, signals_cache, signal2)
@@ -164,7 +164,7 @@ CMD_sigma_guess = search_for_CMD_sigma(part_distrib, [40, 0.23], sizeset, signal
 print('Guessed CMD = {:.5} nm, sigma = {:.3}'.format(CMD_sigma_guess[0], CMD_sigma_guess[1]))
 
 
-probs_guess = get_bin_distrib(part_distrib, [CMD_guess, 0.09], sizeset)
+probs_guess = get_bin_distrib(part_distrib, [CMD_guess, sigma_guess], sizeset)
 signal_guess = np.matmul(signals_cache.T, probs_guess)
 signal_guess = signal_guess / np.amax(signal_guess)
 

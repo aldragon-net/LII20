@@ -16,7 +16,7 @@ from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond
 particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
 therm_path = 'mixtures/therm.dat'
 
-N_bins = 7
+N_bins = 3
 
 part_data = (
  part_name, part_distrib, distrib_data, agg_data,

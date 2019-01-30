@@ -40,7 +40,7 @@ pi3 = pi**3
 particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
 therm_path = 'mixtures/therm.dat'
 
-N_bins = 7
+N_bins = 3
 
 part_data = (
  part_name, part_distrib, distrib_data, agg_data,
@@ -76,8 +76,8 @@ plt.xlabel('t')
 plt.suptitle('Normalized signals')
 plt.show()
 
-part_data = (           
-             Cp_data, ro_data, Em_data, shield_f,
+part_data = (part_name, part_distrib, distrib_data, agg_data,          
+             Cp_data, ro_data, Em_data,
              va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
              ox_k_data, ox_weight, ox_dH_data,
              ann_k_data, ann_dH, ann_Nd_frac,
