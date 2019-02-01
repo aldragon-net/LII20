@@ -14,7 +14,7 @@ from groundf import d2M, M2d
 from groundf import la_flux
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond
-from basef import LII_rad_narrow, LII_rad_wide
+from basef import LII_rad_narrow, LII_rad_wide, fast_LII_rad_narrow
 
 #constants ====================================================================#
 c = 299792458.0     #velocity of light
@@ -85,9 +85,10 @@ def get_LII_signal(ro_data, Em_data, band, solution):
     Ts = solution[:,0]
     Ms = solution[:,1]
     rads = np.zeros((len(Ts)))
-    for j in range(len(Ts)):
-        d = M2d(ro_data, Ms[j], Ts[j])
-        rads[j] = LII_rad_narrow(Em_data, d, Ts[j], band)
+    # for j in range(len(Ts)):      #####old iteration procedure replaced with vector
+        # d = M2d(ro_data, Ms[j], Ts[j])
+        # rads[j] = LII_rad_narrow(Em_data, d, Ts[j], band)
+    rads = fast_LII_rad_narrow(ro_data, Em_data, Ms, Ts, band)
     return rads
 
 def get_LII_cache(part_data, mix_data, la_data, det_data, sizeset, timepoints):

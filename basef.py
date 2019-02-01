@@ -6,6 +6,7 @@ from groundf import ro# ro_function, ro_1_single, ro_poly_single, ro_poly
 
 from groundf import Em #Em_function, Em_1, Em_poly, Em_nk_polys
 from groundf import va_weight, va_dH, va_P_function, va_P_poly, va_P_CC
+from groundf import M2d_array
 
 from groundf import alpha 
 
@@ -114,4 +115,20 @@ def LII_rad_wide(Em_data, d, T, band):
     LII_rad = 8*pi3*d**3*h*(c**2)*I 
     
     return LII_rad
+    
+def fast_LII_rad_narrow(ro_data, Em_data, Ms, Ts, band):
+    """calculates LII signal from array"""
+    wvlng = (band[0] + band[1]) / 2
+    
+    ds = M2d_array(ro_data, Ms, Ts)
+    d3s = np.power(ds, 3)
+    
+    As = (h*c/(wvlng*k)) / Ts
+    Bs = np.expm1(As)
+    Is = (band[1] - band[0]) * (Em(Em_data, wvlng) / wvlng**6) / Bs
+    
+    
+    LII_rads = 8*pi3*h*(c**2)* d3s * Is
+    
+    return LII_rads
 

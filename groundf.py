@@ -1,4 +1,5 @@
 import numpy as np
+from numba import jit
 from scipy.stats import lognorm
 from math import exp
 
@@ -273,6 +274,15 @@ def M2d(ro_data, M, T):
 def d2M(ro_data, d, T):
     """particle mass from diameter"""
     return pi*ro(ro_data, T)*(d**3)/6
+    
+def M2d_array(ro_data, Ms, Ts):
+    """particle diameter array from mass and temperature arrays"""
+    ro_array = np.vectorize(ro, excluded = [0])
+    ros = ro_array(ro_data, Ts)
+    I = Ms / ros
+    I = (6/pi) * I
+    ds = np.cbrt(I) 
+    return ds    
 
 #=================== END OF M-d-M conversion ===============================#
 
