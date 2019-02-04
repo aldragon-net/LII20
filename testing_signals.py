@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from read_files import read_settings
 from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
 from read_signals import read_LIIfile
-from visualf import ask_for_signals, ask_for_la_energy
+from visualf import ask_for_signals, ask_for_la_energy, ask_for_T0_P0
 
 from groundf import size_prob, get_size_bins, get_bin_distrib, get_shielding
 from groundf import get_fluence, la_flux
@@ -52,7 +52,7 @@ part_data = (
  part_workf
            ) = read_particles(particle_path)
 
-mix_data = (composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0) = read_gas_mixture(gas_path, therm_path)
+mix_data = read_gas_mixture(gas_path, therm_path)
 
 la_data = read_laser(laser_path)
 
@@ -62,9 +62,17 @@ signal_path_1, signal_path_2 = ask_for_signals()
 
 la_data = ask_for_la_energy(la_data)
 
+mix_data = ask_for_T0_P0(mix_data)
+
+
 (la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data) = la_data
+(composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0) = mix_data
 
 print("Laser energy=", la_energy)
+
+
+
+print("T0/P0 ", T0, P0)
 
 la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)

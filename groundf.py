@@ -1,4 +1,5 @@
 import numpy as np
+import scipy as sp
 from numba import jit
 from scipy.stats import lognorm
 from math import exp
@@ -285,6 +286,21 @@ def M2d_array(ro_data, Ms, Ts):
     return ds    
 
 #=================== END OF M-d-M conversion ===============================#
+
+#====================Cp integration ========================================#
+
+def Cp2Cp_int(gas_Cp_data, T0):
+    """integration of Cp for given temperature"""
+    gas_Cpint = []
+    def Cp(T):
+        """gas_Cp_function for integration"""
+        return np.interp(T, gas_Cp_data[0], gas_Cp_data[1])
+    for T in range(200,5100, 100):
+        I, __ = sp.integrate.quad(Cp, T0, T, epsrel=1e-5)
+        gas_Cpint.append((T, I)) 
+    gas_Cpint_data = np.array(gas_Cpint)
+    gas_Cpint_data = gas_Cpint_data.transpose()  
+    return gas_Cpint_data
 
 particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
 therm_path = 'mixtures/therm.dat'
