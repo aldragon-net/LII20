@@ -29,7 +29,7 @@ def SG_smooth_signal(signal):
     """Savitsky-Golay smoothing of signal"""
     signal_points = signal[1]
     smoothed_signal = np.copy(signal)
-    smoothed_signal[1] = sp.signal.savgol_filter(signal_points, 51, 3)
+    smoothed_signal[1] = sp.signal.savgol_filter(signal_points, 31, 3)
     return smoothed_signal
     
 def cut_tails(signal, noise):

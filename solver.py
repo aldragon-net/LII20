@@ -2,9 +2,6 @@ import numpy as np
 import scipy as sp
 import time
 
-from groundf import Cp_function, Cp_1_single, Cp_3_single, Cp_3, Cp_5_single, Cp_5
-from groundf import ro_function, ro_1_single, ro_poly_single, ro_poly
-
 from groundf import Cp, Em, ro, alpha
 
 from groundf import Em_function, Em_1, Em_poly, Em_nk_polys
@@ -89,6 +86,7 @@ def get_LII_signal(ro_data, Em_data, band, solution):
         # d = M2d(ro_data, Ms[j], Ts[j])
         # rads[j] = LII_rad_narrow(Em_data, d, Ts[j], band)
     rads = fast_LII_rad_narrow(ro_data, Em_data, Ms, Ts, band)
+    rads = rads - rads[0]
     return rads
 
 def get_LII_cache(part_data, mix_data, la_data, det_data, sizeset, timepoints):
@@ -96,7 +94,7 @@ def get_LII_cache(part_data, mix_data, la_data, det_data, sizeset, timepoints):
     #unpacking data:
     la_fluence_data = la_data[1]
     ro_data, Em_data = part_data[1], part_data[2]
-    band_1, band_2 = det_data[1], det_data[2]
+    band_1, band_2 = det_data[0], det_data[1]
     signals_cache = np.zeros((sizeset.shape[0], timepoints.shape[0]))
     print('\nGenerating signals cache...')
     start_time = time.time()

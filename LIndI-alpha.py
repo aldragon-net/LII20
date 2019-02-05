@@ -78,6 +78,8 @@ la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
 shield_f = get_shielding(agg_data)
 
+print('Fluence =', la_fluence_data)
+
 signal_1 = read_LIIfile(signal_path_1)
 signal_2 = read_LIIfile(signal_path_2)
 
@@ -160,7 +162,7 @@ plt.show()
 
 probs = get_bin_distrib(part_distrib, [40, 0.16], sizeset)
 
-probs2 = get_bin_distrib(part_distrib, [40, 0.16], sizeset)
+probs2 = get_bin_distrib(part_distrib, [11, 0.09], sizeset)
 
 
 signal = np.matmul(signals_cache.T, probs)

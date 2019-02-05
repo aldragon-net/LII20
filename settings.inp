@@ -1,4 +1,4 @@
 PARTICLES   graphite.pin
-MIXTURE     gas.gin
-LASER       nd-yag.lin
-DETECTOR    LIIsystem.din
+MIXTURE     flame.gin
+LASER       nd-yag532.lin
+DETECTOR    LII-flame.din

@@ -29,7 +29,7 @@ def search_for_Em(part_data, mix_data, la_data, det_data, signal_1, signal_2):
     (composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0) = mix_data
     (det_name, band_1, band_2, bb_s1s2) = det_data 
     
-    N_bins = 3
+    N_bins = 5
     
     size_data, __ = get_size_bins(part_distrib, distrib_data, N_bins)
     shield_f = get_shielding(agg_data)
@@ -68,9 +68,9 @@ def search_for_Em(part_data, mix_data, la_data, det_data, signal_1, signal_2):
                 mod_signal_2 = mod_signal_2 + rads_2*fl_frac*size_frac               
         mod_ratio = np.amax(mod_signal_1) / np.amax(mod_signal_2)
         F = abs(mod_ratio - exp_ratio)
-        print('F =', F)
+        #print('F =', F)
         i = round(time.time()*64)%64
-        #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
+        print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
         return F
     
     print('Looking for E(m) value...')
@@ -182,7 +182,7 @@ def search_for_CMD_sigma(part_distrib, distrib_data, sizeset, signals_cache, ref
         return F
     print('Looking for CMD & sigma...')
     start_time = time.time()
-    opt_res = sp.optimize.minimize(F, (60, 0.03), method='SLSQP', bounds = ((3, 100), (0.1, 1.5)))
+    opt_res = sp.optimize.minimize(F, (40, 0.03), method='SLSQP', bounds = ((3, 100), (0.04, 1.0)))
     CMD_sigma_guess = opt_res.x       
     tau = time.time() - start_time
     print('\nDone! (in {:.3f} seconds)\n'.format(tau))
