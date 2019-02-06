@@ -14,6 +14,7 @@ from scipy.stats import lognorm
 
 from read_files import read_settings
 from read_files import read_particles, read_laser, read_gas_mixture, read_detectors
+
 from groundf import Cp, ro, Em, alpha
 from groundf import size_prob, get_size_bins, get_bin_distrib, get_shielding
 from groundf import get_fluence, la_flux
@@ -22,6 +23,8 @@ from solver import get_LII_cache
 
 
 from read_signals import read_LIIfile
+
+from visualf import LIndI_greetings, confrim_settings, confirm_data
 from visualf import ask_for_signals, ask_for_la_energy, ask_for_T0_P0
 
 from clean_signals import process_signals, normalize_signals
@@ -41,7 +44,11 @@ pi = 3.14159265     #Pi
 pi3 = pi**3
 
 
+LIndI_greetings()
+
 particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
+confrim_settings(particle_path, gas_path, laser_path, det_path)
+
 therm_path = 'mixtures/therm.dat'
 
 N_bins = 3
@@ -51,9 +58,16 @@ mix_data = read_gas_mixture(gas_path, therm_path)
 la_data = read_laser(laser_path)
 det_data = (det_name, band_1, band_2, bb_s1s2) = read_detectors(det_path)
 
-signal_path_1, signal_path_2 = ask_for_signals()
+confirm_data(part_data, mix_data, la_data, det_data)
+
+signal_path_1, signal_path_2 = ask_for_signals(det_data)
 
 la_data = ask_for_la_energy(la_data)
+
+(la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data) = la_data
+la_fluence_data = get_fluence(la_data)
+print('Max fluence = {:.3f} J/cm2'.format(max(la_fluence_data[1,:])*1e-4)) #J/m2 to J/cm2
+
 mix_data = ask_for_T0_P0(mix_data)
 
 (
@@ -66,19 +80,13 @@ mix_data = ask_for_T0_P0(mix_data)
            ) = part_data
 
 
-(la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data) = la_data
+
 (composition, gas_weight, gas_Cp_data, gas_Cpint_data, alpha_data, T0, P0) = mix_data
 
-print(gas_Cpint_data)
-
-print("Laser energy=", la_energy)
-print("T0/P0 ", T0, P0)
-
-la_fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 size_data, bin_width = get_size_bins(part_distrib, distrib_data, N_bins)
 shield_f = get_shielding(agg_data)
 
-print('Fluence =', la_fluence_data)
+
 
 signal_1 = read_LIIfile(signal_path_1)
 signal_2 = read_LIIfile(signal_path_2)
@@ -112,18 +120,10 @@ print('E(m) guess =', Em_guess)
 
 timepoints = np.copy(signal_1[0,:] - signal_1[0,0])
 
-print('Timepoints: ', timepoints)
-
 sizeset_small = np.linspace(0.5e-9, 20e-9, 40)
 sizeset_med = np.linspace(21e-9, 60e-9, 40)
 sizeset_big = np.linspace(62e-9, 100e-9, 20)
 sizeset = np.hstack((sizeset_small, sizeset_med, sizeset_big))
-
-print('Sizeset:', sizeset)
-
-d = 2e-8
-
-
 
 #preparation to pass to solver
 part_data = (           

@@ -13,6 +13,8 @@ pi = 3.14159265     #Pi
 
 def read_settings(settingspath):
     """read settings from settings file"""
+    
+    partfilepath = mixfilepath = lasfilepath = detfilepath = None
     with open(settingspath, 'r') as inpfile:
         while True:
             line = inpfile.readline()
@@ -26,7 +28,7 @@ def read_settings(settingspath):
                 lasfilepath = 'lasers/' + line.split()[1]
             if line.split()[0] == 'DETECTOR':
                 detfilepath = 'detectors/' + line.split()[1]
-    inpfile.close()
+    inpfile.close()   
     return partfilepath, mixfilepath, lasfilepath, detfilepath
               
 #=============================================================================#

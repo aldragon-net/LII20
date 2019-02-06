@@ -234,10 +234,10 @@ def get_shielding(agg_data):
 
 #=================== Laser impulse block ======================================#
 
-def get_fluence(energy, mode, spat):
+def get_fluence(la_data):
     """returns set of fluences from spatial data""" 
+    (_, mode, _, energy, spat, _) = la_data
     spat[0] = spat[0]*1e-3  #mm to meters
-    
     if mode == 'BEAM':
         Ss = []
         fluences = []
@@ -302,35 +302,40 @@ def Cp2Cp_int(gas_Cp_data, T0):
     gas_Cpint_data = gas_Cpint_data.transpose()  
     return gas_Cpint_data
 
-particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
+partfilepath, mixfilepath, lasfilepath, detfilepath = read_settings('settings.inp')
 therm_path = 'mixtures/therm.dat'
 
-(
- part_name, part_distrib, distrib_data, agg_data,
- Cp_data, ro_data, Em_data,
- va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
- ox_k_data, ox_weight, ox_dH_data,
- ann_k_data, ann_dH, ann_Nd_frac,
- part_workf
-           ) = read_particles(particle_path)
+if all((partfilepath, mixfilepath, lasfilepath, detfilepath)):   
+    (
+     part_name, part_distrib, distrib_data, agg_data,
+     Cp_data, ro_data, Em_data,
+     va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
+     ox_k_data, ox_weight, ox_dH_data,
+     ann_k_data, ann_dH, ann_Nd_frac,
+     part_workf
+               ) = read_particles(partfilepath)
 
-(
- composition, gas_weight, gas_Cp_data, gas_Cpint_data,
- alpha_data, T0, P0
-                   ) = read_gas_mixture(gas_path, therm_path)
+    (
+     composition, gas_weight, gas_Cp_data, gas_Cpint_data,
+     alpha_data, T0, P0
+                       ) = read_gas_mixture(mixfilepath, therm_path)
 
-(
- la_name, la_mode, la_wvlng, la_energy,
- la_spat_data, la_time_data
-                           ) = read_laser(laser_path)
+    (
+     la_name, la_mode, la_wvlng, la_energy,
+     la_spat_data, la_time_data
+                               ) = read_laser(lasfilepath)
 
-det_name, band_1, band_2, bb_s1s2 = read_detectors(det_path)
+    det_name, band_1, band_2, bb_s1s2 = read_detectors(detfilepath)
+    
+    Cp = Cp_function(Cp_data)
+    ro = ro_function(ro_data)
+    Em = Em_function(Em_data)
+    
+else:
+    Cp = Cp_5
+    ro = ro_poly_single
+    Em = Em_poly
 
-Cp = Cp_function(Cp_data)
-ro = ro_function(ro_data)
-Em = Em_function(Em_data)
-
-fluence_data = get_fluence(la_energy, la_mode, la_spat_data)
 
 
 
