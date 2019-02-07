@@ -70,7 +70,7 @@ def search_for_Em(part_data, mix_data, la_data, det_data, signal_1, signal_2):
         F = abs(mod_ratio - exp_ratio)
         #print('F =', F)
         i = round(time.time()*64)%64
-        print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
+        #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
         return F
     
     print('Looking for E(m) value...')
@@ -120,9 +120,7 @@ def search_for_Em(part_data, mix_data, la_data, det_data, signal_1, signal_2):
     plt.ylabel('I')
     plt.xlabel('t')
     plt.suptitle('signals')
-    plt.show()
-    
-    
+    plt.show()  
     return Em_guess
 
 
@@ -133,15 +131,30 @@ def signals_comparator(ref_signal, test_signal):
     sum_sq_delta = np.sum(sq_delta)
     return sum_sq_delta
     
-def search_for_CMD(part_distrib, distrib_data, sizeset, signals_cache, ref_signal):
+def signals_collimator(test_signal, exp_signal, mode='maxpoint'):
+    """shift signal to collimate it with modeled one"""
+    if mode == 'maxpoint':
+        cll_test_signal = np.copy(test_signal)
+        cll_exp_signal = np.copy(exp_signal)
+        test_max = np.argmax(test_signal)
+        exp_max = np.argmax(exp_signal)
+        exp_shift = exp_max - test_max
+        cll_exp_signal = np.roll(exp_signal, -exp_shift)
+        cll_exp_signal = cll_exp_signal[0:-exp_shift]
+        cll_test_signal = cll_test_signal[0:-exp_shift]           
+    return cll_test_signal, cll_exp_signal
+    
+def search_for_CMD(part_distrib, distrib_data, sizeset, signals_cache, exp_signal):
     """search for CMD describing ref signal"""
     def F(CMD):
         """function for minimizing"""
         probs = get_bin_distrib(part_distrib, [CMD, distrib_data[1]], sizeset)
         test_signal = np.matmul(signals_cache.T, probs)
-        F = signals_comparator(ref_signal, test_signal)
+        test_signal = test_signal / np.amax(test_signal)
+        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = round(time.time()*100)%64
-        print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
+        #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
         return F
     print('Looking for CMD...')
     start_time = time.time()
@@ -151,15 +164,17 @@ def search_for_CMD(part_distrib, distrib_data, sizeset, signals_cache, ref_signa
     print('\nDone! (in {:.3f} seconds)\n'.format(tau))
     return CMD_guess
 
-def search_for_sigma(part_distrib, distrib_data, sizeset, signals_cache, ref_signal):
+def search_for_sigma(part_distrib, distrib_data, sizeset, signals_cache, exp_signal):
     """search for sigma describing ref signal"""
     def F(sigma):
         """function for minimizing"""
         probs = get_bin_distrib(part_distrib, [distrib_data[0], sigma], sizeset)
         test_signal = np.matmul(signals_cache.T, probs)
-        F = signals_comparator(ref_signal, test_signal)
+        test_signal = test_signal / np.amax(test_signal)
+        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = round(time.time()*100)%64
-        print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
+        #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
         return F
     print('Looking for sigma...')
     start_time = time.time()
@@ -170,19 +185,21 @@ def search_for_sigma(part_distrib, distrib_data, sizeset, signals_cache, ref_sig
     print('\nDone! (in {:.3f} seconds)\n'.format(tau))
     return sigma_guess
     
-def search_for_CMD_sigma(part_distrib, distrib_data, sizeset, signals_cache, ref_signal):
-    """search for CMD describing ref signal"""
+def search_for_CMD_sigma(part_distrib, distrib_data, sizeset, signals_cache, exp_signal):
+    """search for CMD describing exp signal"""
     def F(CMDsigma):
         """function for minimizing"""
         probs = get_bin_distrib(part_distrib, [CMDsigma[0], CMDsigma[1]], sizeset)
         test_signal = np.matmul(signals_cache.T, probs)
-        F = signals_comparator(ref_signal, test_signal)
+        test_signal = test_signal / np.amax(test_signal)
+        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = abs(64-round(time.time()*64)%128)
-        print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
+        #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
         return F
     print('Looking for CMD & sigma...')
     start_time = time.time()
-    opt_res = sp.optimize.minimize(F, (40, 0.03), method='SLSQP', bounds = ((3, 100), (0.04, 1.0)))
+    opt_res = sp.optimize.minimize(F, (31.6, 0.16), method='SLSQP', bounds = ((1, 100), (0.01, 0.5)))
     CMD_sigma_guess = opt_res.x       
     tau = time.time() - start_time
     print('\nDone! (in {:.3f} seconds)\n'.format(tau))

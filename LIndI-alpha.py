@@ -27,9 +27,9 @@ from read_signals import read_LIIfile
 from visualf import LIndI_greetings, confrim_settings, confirm_data
 from visualf import ask_for_signals, ask_for_la_energy, ask_for_T0_P0
 
-from clean_signals import process_signals, normalize_signals
+from signalsf import process_signals, normalize_signals
 
-from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma, search_for_Em
+from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma, search_for_Em, signals_collimator
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad_wide, LII_rad_narrow
 
@@ -62,6 +62,21 @@ confirm_data(part_data, mix_data, la_data, det_data)
 
 signal_path_1, signal_path_2 = ask_for_signals(det_data)
 
+signal_1 = read_LIIfile(signal_path_1)
+signal_2 = read_LIIfile(signal_path_2)
+
+trunc_signal_1, trunc_signal_2 = process_signals(signal_1, signal_2)
+
+signal_1, signal_2 = normalize_signals(trunc_signal_1, trunc_signal_2, band_1, band_2, bb_s1s2)
+
+plt.plot(signal_1[0], signal_1[1], 'r-', signal_2[0], signal_2[1],'b-')
+plt.ylabel('I, a.u.')
+plt.xlabel('t')
+plt.suptitle('Normalized signals')
+plt.show()
+
+
+
 la_data = ask_for_la_energy(la_data)
 
 (la_name, la_mode, la_wvlng, la_energy, la_spat_data, la_time_data) = la_data
@@ -88,18 +103,7 @@ shield_f = get_shielding(agg_data)
 
 
 
-signal_1 = read_LIIfile(signal_path_1)
-signal_2 = read_LIIfile(signal_path_2)
 
-trunc_signal_1, trunc_signal_2 = process_signals(signal_1, signal_2)
-
-signal_1, signal_2 = normalize_signals(trunc_signal_1, trunc_signal_2, band_1, band_2, bb_s1s2)
-
-plt.plot(signal_1[0], signal_1[1], 'r-', signal_2[0], signal_2[1],'b-')
-plt.ylabel('I, a.u.')
-plt.xlabel('t')
-plt.suptitle('Normalized signals')
-plt.show()
 
 part_data = (part_name, part_distrib, distrib_data, agg_data,          
              Cp_data, ro_data, Em_data,
@@ -147,46 +151,56 @@ print('Input hash = ', inp_md5)
 
 signals_cache = get_LII_cache(part_data, mix_data, la_data, det_data, sizeset, timepoints)
 
-print('Signal cache dimensions', signals_cache.shape)
+# print('Signal cache dimensions', signals_cache.shape)
 
-plt.plot(timepoints, signals_cache[10], 'r-', 
-         timepoints, signals_cache[20], 'g-',
-         timepoints, signals_cache[40], 'b-',
-         timepoints, signals_cache[80], 'o-',)
-plt.legend(('1', '2', '3', '4'))
-plt.yscale('log')
-plt.ylabel('I')
-plt.xlabel('t')
-plt.suptitle('signals')
-plt.show()
+# plt.plot(timepoints, signals_cache[10], 'r-', 
+         # timepoints, signals_cache[20], 'g-',
+         # timepoints, signals_cache[40], 'b-',
+         # timepoints, signals_cache[80], 'o-',)
+# plt.legend(('1', '2', '3', '4'))
+# plt.yscale('log')
+# plt.ylabel('I')
+# plt.xlabel('t')
+# plt.suptitle('signals')
+# plt.show()
 
-probs = get_bin_distrib(part_distrib, [40, 0.16], sizeset)
+# probs = get_bin_distrib(part_distrib, [40, 0.16], sizeset)
 
-probs2 = get_bin_distrib(part_distrib, [11, 0.09], sizeset)
-
-
-signal = np.matmul(signals_cache.T, probs)
-signal = signal / np.amax(signal)
-signal2 = np.matmul(signals_cache.T, probs2)
-signal2_norm = signal2 / np.amax(signal2)
+# probs2 = get_bin_distrib(part_distrib, [11, 0.09], sizeset)
 
 
-CMD_guess = search_for_CMD(part_distrib, [30, 0.16], sizeset, signals_cache, signal2)
+# signal = np.matmul(signals_cache.T, probs)
+# signal = signal / np.amax(signal)
+# signal2 = np.matmul(signals_cache.T, probs2)
+# signal2_norm = signal2 / np.amax(signal2)
+
+
+CMD_guess = search_for_CMD(part_distrib, [30, 0.09], sizeset, signals_cache, signal_1[1])
 print('Guessed CMD = {:.3} nm'.format(CMD_guess))
 
-sigma_guess = search_for_sigma(part_distrib, [20, 0.06], sizeset, signals_cache, signal2)
-print('Guessed sigma = {:.3}'.format(sigma_guess))
+# sigma_guess = search_for_sigma(part_distrib, [20, 0.06], sizeset, signals_cache, signal2)
+# print('Guessed sigma = {:.3}'.format(sigma_guess))
 
-CMD_sigma_guess = search_for_CMD_sigma(part_distrib, [50, 0.23], sizeset, signals_cache, signal2)
+CMD_sigma_guess = search_for_CMD_sigma(part_distrib, [50, 0.08], sizeset, signals_cache, signal_1[1])
 
 print('Guessed CMD = {:.5} nm, sigma = {:.3}'.format(CMD_sigma_guess[0], CMD_sigma_guess[1]))
 
 
-probs_guess = get_bin_distrib(part_distrib, [CMD_guess, sigma_guess], sizeset)
+probs_guess = get_bin_distrib(part_distrib, [CMD_sigma_guess[0], CMD_sigma_guess[1]], sizeset)
 signal_guess = np.matmul(signals_cache.T, probs_guess)
 signal_guess = signal_guess / np.amax(signal_guess)
 
-plt.plot(timepoints, signal_1[1], 'r-',timepoints, signal2_norm, 'g-', timepoints, signal_guess, 'b-')
+signal_guess, signal_1_shift = signals_collimator(signal_guess, signal_1[1])
+
+i = timepoints.shape[-1] - signal_guess.shape[-1]
+
+timepoints_cut = timepoints[0:-i]
+
+print('Timepoints:', timepoints_cut.shape[-1])
+print('Signal 1:', signal_1_shift.shape[-1])
+print('Signal mod:', signal_guess.shape[-1])
+
+plt.plot(timepoints_cut, signal_1_shift, 'r-', timepoints_cut, signal_guess, 'b-')
 plt.legend(('1'))
 plt.ylabel('I')
 plt.xlabel('t')

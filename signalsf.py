@@ -121,7 +121,7 @@ def normalize_signals(signal_1, signal_2, band_1, band_2, bb_s1s2):
     norm_signal_2 = np.copy(signal_2)
     norm_signal_1[1] = signal_1[1] / max_s1
     norm_signal_2[1] = signal_2[1] / (max_s1*theor_s1s2/exp_s1s2)
-    return norm_signal_1, norm_signal_2    
+    return norm_signal_1, norm_signal_2
     
         
     

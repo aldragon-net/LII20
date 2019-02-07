@@ -109,7 +109,7 @@ def get_LII_cache(part_data, mix_data, la_data, det_data, sizeset, timepoints):
             rads = get_LII_signal(ro_data, Em_data, band_1, solution)
             signals_cache[i] = signals_cache[i] + rads*fl_frac
         progress = round((i+1)*72/N_of_sizes)
-        print(progress*'█'+(72-progress)*'░', end='\r', flush=True)
+        #print(progress*'█'+(72-progress)*'░', end='\r', flush=True)
     tau = time.time() - start_time
     print('\nDone! in ', tau, 'seconds\n\n')
     return signals_cache
