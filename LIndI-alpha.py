@@ -29,7 +29,7 @@ from visualf import ask_for_signals, ask_for_la_energy, ask_for_T0_P0
 
 from signalsf import process_signals, normalize_signals
 
-from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma, search_for_Em, signals_collimator
+from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma, search_for_Em, signals_collimator, signal_adjuster
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad_wide, LII_rad_narrow
 
@@ -64,6 +64,8 @@ signal_path_1, signal_path_2 = ask_for_signals(det_data)
 
 signal_1 = read_LIIfile(signal_path_1)
 signal_2 = read_LIIfile(signal_path_2)
+
+raw_signal = np.copy(signal_1[1])
 
 trunc_signal_1, trunc_signal_2 = process_signals(signal_1, signal_2)
 
@@ -191,16 +193,24 @@ signal_guess = np.matmul(signals_cache.T, probs_guess)
 signal_guess = signal_guess / np.amax(signal_guess)
 
 signal_guess, signal_1_shift = signals_collimator(signal_guess, signal_1[1])
+signal_guess = signal_adjuster(signal_guess, signal_1_shift, 'aftermax')
 
 i = timepoints.shape[-1] - signal_guess.shape[-1]
-
 timepoints_cut = timepoints[0:-i]
 
 print('Timepoints:', timepoints_cut.shape[-1])
 print('Signal 1:', signal_1_shift.shape[-1])
 print('Signal mod:', signal_guess.shape[-1])
+print('Raw', raw_signal.shape[-1])
 
 plt.plot(timepoints_cut, signal_1_shift, 'r-', timepoints_cut, signal_guess, 'b-')
+plt.legend(('1'))
+plt.ylabel('I')
+plt.xlabel('t')
+plt.suptitle('signals')
+plt.show()
+
+plt.plot(sizeset, probs_guess)
 plt.legend(('1'))
 plt.ylabel('I')
 plt.xlabel('t')

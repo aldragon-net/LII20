@@ -124,25 +124,47 @@ def search_for_Em(part_data, mix_data, la_data, det_data, signal_1, signal_2):
     return Em_guess
 
 
-def signals_comparator(ref_signal, test_signal):
+def signals_comparator(ref_signal, test_signal, f=1.5):
     """calculates squared delta of signals"""
+    deadzone = int(round(f * np.argmax(ref_signal)))
     delta = (ref_signal - test_signal)/np.max(ref_signal)
     sq_delta = np.square(delta)
-    sum_sq_delta = np.sum(sq_delta)
+    sum_sq_delta = np.sum(sq_delta[deadzone:])
     return sum_sq_delta
     
-def signals_collimator(test_signal, exp_signal, mode='maxpoint'):
+def signals_collimator(test_signal, exp_signal, mode='rise'):
     """shift signal to collimate it with modeled one"""
+    cll_test_signal = np.copy(test_signal)
+    cll_exp_signal = np.copy(exp_signal)
     if mode == 'maxpoint':
-        cll_test_signal = np.copy(test_signal)
-        cll_exp_signal = np.copy(exp_signal)
         test_max = np.argmax(test_signal)
         exp_max = np.argmax(exp_signal)
         exp_shift = exp_max - test_max
-        cll_exp_signal = np.roll(exp_signal, -exp_shift)
-        cll_exp_signal = cll_exp_signal[0:-exp_shift]
-        cll_test_signal = cll_test_signal[0:-exp_shift]           
+    if mode == 'rise':
+        test_max = np.amax(test_signal)
+        exp_max = np.amax(exp_signal)
+        test_rise = np.argmax(test_signal>test_max*0.3)
+        exp_rise = np.argmax(exp_signal>exp_max*0.3)
+        exp_shift = exp_rise - test_rise
+    cll_exp_signal = np.roll(exp_signal, -exp_shift)
+    cll_exp_signal = cll_exp_signal[0:-exp_shift]
+    cll_test_signal = cll_test_signal[0:-exp_shift]
+            
     return cll_test_signal, cll_exp_signal
+    
+def signal_adjuster(test_signal, exp_signal, mode='noadjust', sfactor=1):
+    """adjust test signal amplitude"""
+    if mode == 'noadjust':
+        return test_signal
+    if mode == 'aftermax':
+        test_max = np.argmax(test_signal)
+        point = (test_max*3)//2
+        test_value = test_signal[point]
+        exp_value = np.mean(exp_signal[point-5:point+5])
+        sfactor = exp_value / test_value
+        return test_signal * sfactor
+    if mode == 'free_tune':
+        return test_signal * sfactor          
     
 def search_for_CMD(part_distrib, distrib_data, sizeset, signals_cache, exp_signal):
     """search for CMD describing ref signal"""
@@ -152,6 +174,7 @@ def search_for_CMD(part_distrib, distrib_data, sizeset, signals_cache, exp_signa
         test_signal = np.matmul(signals_cache.T, probs)
         test_signal = test_signal / np.amax(test_signal)
         cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        cll_test_signal = signal_adjuster(cll_test_signal, cll_exp_signal, 'aftermax')
         F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = round(time.time()*100)%64
         #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
@@ -193,13 +216,14 @@ def search_for_CMD_sigma(part_distrib, distrib_data, sizeset, signals_cache, exp
         test_signal = np.matmul(signals_cache.T, probs)
         test_signal = test_signal / np.amax(test_signal)
         cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        cll_test_signal = signal_adjuster(cll_test_signal, cll_exp_signal, 'aftermax')
         F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = abs(64-round(time.time()*64)%128)
         #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
         return F
     print('Looking for CMD & sigma...')
     start_time = time.time()
-    opt_res = sp.optimize.minimize(F, (31.6, 0.16), method='SLSQP', bounds = ((1, 100), (0.01, 0.5)))
+    opt_res = sp.optimize.minimize(F, (31.6, 0.16), method='SLSQP', bounds = ((0.5, 100), (0.01, 0.5)))
     CMD_sigma_guess = opt_res.x       
     tau = time.time() - start_time
     print('\nDone! (in {:.3f} seconds)\n'.format(tau))
