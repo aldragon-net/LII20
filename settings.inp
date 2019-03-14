@@ -1,4 +1,4 @@
 PARTICLES   graphite.pin
 MIXTURE     flame.gin
-LASER       nd-yag532.lin
+LASER       nd-yag1064.lin
 DETECTOR    LII-flame.din

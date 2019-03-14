@@ -9,19 +9,20 @@ from tkinter import font
 from groundf import Cp2Cp_int
 
 def LIndI_greetings():
+    """display welcome message on program start"""
     print('*'*72)
     print(' '*33, 'LIndI')
     print('*'*72)
     print('\nLIndI is starting…')
 
-def confrim_settings(partfilepath, mixfilepath, lasfilepath, detfilepath):
-    """confrim reading from settings.inp"""
+def confirm_settings(partfilepath, mixfilepath, lasfilepath, detfilepath):
+    """confirm reading from settings.inp"""
     if all((partfilepath, mixfilepath, lasfilepath, detfilepath)):
         print('Successfully read settings from settings.inp')
     else:
         print('ERROR reading settings from settings.inp\n\nPress any key to exit')
         input()
-        sys.exit()
+        sys.exit()   #terminating if any of filepaths is None
         
 def confirm_data(part_data, mix_data, la_data, det_data):
     """confrim reading from data files"""
@@ -30,11 +31,11 @@ def confirm_data(part_data, mix_data, la_data, det_data):
     else:
         print('ERROR')
         input()
-        sys.exit()
+        sys.exit() #terminating if any of datasets is None
 
 def ask_for_signals(det_data):
     """GUI for signals input"""
-    (_, band_1, band_2, _) = det_data
+    (_, band_1, band_2, _) = det_data               #wavelengths from det_data
     signal_path_1 = signal_path_2 = ''
     while not all((signal_path_1, signal_path_2)):
         print(
@@ -76,12 +77,18 @@ def ask_for_la_energy(la_data):
     print('\nSpecify laser energy:')
     
     root = Tk()
+    root.geometry('300x60+300+200')
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
     energy_float = DoubleVar(root)
     energy_float.set(la_energy)
     root.title("Input laser energy")
     mainframe = ttk.Frame(root, padding="10 10 10 10")
     mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
-    
+    mainframe.columnconfigure(0, weight=1)
+    mainframe.columnconfigure(1, weight=0) 
+    mainframe.columnconfigure(2, weight=1) 
+    mainframe.columnconfigure(3, weight=1) 
     energy_value = StringVar()
     
     energy_value.set('{:.1f}'.format(la_energy*1e3)) #Joules to milliJoules
@@ -91,7 +98,7 @@ def ask_for_la_energy(la_data):
                         textvariable=energy_value).grid(column=1,row=0,sticky=E)
     ttk.Label(mainframe, text="mJ").grid(column=2, row=0, sticky=W)
     ok_button = ttk.Button(mainframe, text = 'OK')
-    ok_button.grid(row = 0, column = 4)
+    ok_button.grid(row = 0, column = 3, sticky=(W,E))
     ok_button.bind("<Button-1>", save_and_quit)
     
     root.mainloop()
@@ -115,6 +122,9 @@ def ask_for_T0_P0(mix_data):
         root.destroy()
     print('\nSpecify ambient gas temperature and pressure:')
     root = Tk()
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
+    root.geometry('300x70+300+200')
     T0_float = DoubleVar(root)
     T0_float.set(T0)
     P0_float = DoubleVar(root)
@@ -128,7 +138,11 @@ def ask_for_T0_P0(mix_data):
     
     T0_value.set('{:.0f}'.format(T0))
     P0_value.set('{:.3f}'.format(P0*1e-5))   #Pa to bar
-       
+    
+    mainframe.columnconfigure(0, weight=1)
+    mainframe.columnconfigure(1, weight=0) 
+    mainframe.columnconfigure(2, weight=1) 
+    mainframe.columnconfigure(3, weight=1)     
     ttk.Label(mainframe, text="T0 = ").grid(column=0, row=0, sticky=E)
     E_entry = ttk.Entry(mainframe, width=7, textvariable=T0_value).grid(column=1, row=0, sticky=E)
     ttk.Label(mainframe, text="K").grid(column=2, row=0, sticky=W)
@@ -139,7 +153,7 @@ def ask_for_T0_P0(mix_data):
     
     
     ok_button = ttk.Button(mainframe, text = 'OK')
-    ok_button.grid(row = 1, column = 4)
+    ok_button.grid(row = 1, column = 3, sticky=(W,E))
     ok_button.bind("<Button-1>", save_and_quit)
     
     root.mainloop()

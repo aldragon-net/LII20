@@ -68,14 +68,12 @@ def search_for_Em(part_data, mix_data, la_data, det_data, signal_1, signal_2):
                 mod_signal_2 = mod_signal_2 + rads_2*fl_frac*size_frac               
         mod_ratio = np.amax(mod_signal_1) / np.amax(mod_signal_2)
         F = abs(mod_ratio - exp_ratio)
-        #print('F =', F)
         i = round(time.time()*64)%64
         #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
         return F
     
     print('Looking for E(m) value...')
     start_time = time.time()
-    #opt_res = sp.optimize.minimize(F, (0.4,), method='SLSQP', bounds = ((0.01,1.0),))
     opt_res = sp.optimize.minimize_scalar(F, method = 'bounded', bounds = (0.01,1.0))
     Em_guess = opt_res.x       
     tau = time.time() - start_time
@@ -228,6 +226,27 @@ def search_for_CMD_sigma(part_distrib, distrib_data, sizeset, signals_cache, exp
     tau = time.time() - start_time
     print('\nDone! (in {:.3f} seconds)\n'.format(tau))
     return CMD_sigma_guess
+    
+def search_for_CMD_sigma_factor(part_distrib, distrib_data, sizeset, signals_cache, exp_signal):
+    """search for CMD describing exp signal"""
+    def F(CMDsigmaf):
+        """function for minimizing"""
+        probs = get_bin_distrib(part_distrib, [CMDsigmaf[0], CMDsigmaf[1]], sizeset)
+        test_signal = np.matmul(signals_cache.T, probs)
+        test_signal = test_signal / np.amax(test_signal)
+        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        cll_test_signal = signal_adjuster(cll_test_signal, cll_exp_signal, 'free_tune', CMDsigmaf[2])
+        F = signals_comparator(cll_exp_signal, cll_test_signal)
+        i = abs(64-round(time.time()*64)%128)
+        #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
+        return F
+    print('Looking for CMD & sigma...')
+    start_time = time.time()
+    opt_res = sp.optimize.minimize(F, (31.6, 0.16, 1.1), method='SLSQP', bounds = ((0.5, 100), (0.01, 0.5), (0.95, 2.0)))
+    CMD_sigma_factor_guess = opt_res.x       
+    tau = time.time() - start_time
+    print('\nDone! (in {:.3f} seconds)\n'.format(tau))
+    return CMD_sigma_factor_guess
 
 
 

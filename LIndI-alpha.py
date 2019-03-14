@@ -24,12 +24,12 @@ from solver import get_LII_cache
 
 from read_signals import read_LIIfile
 
-from visualf import LIndI_greetings, confrim_settings, confirm_data
+from visualf import LIndI_greetings, confirm_settings, confirm_data
 from visualf import ask_for_signals, ask_for_la_energy, ask_for_T0_P0
 
 from signalsf import process_signals, normalize_signals
 
-from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma, search_for_Em, signals_collimator, signal_adjuster
+from comparator import search_for_CMD, search_for_sigma, search_for_CMD_sigma, search_for_CMD_sigma_factor, search_for_Em, signals_collimator, signal_adjuster
 
 from basef import Q_abs, Q_rad_simple, Q_rad_integrate, Q_dM_sub, Q_cond, LII_rad_wide, LII_rad_narrow
 
@@ -47,7 +47,7 @@ pi3 = pi**3
 LIndI_greetings()
 
 particle_path, gas_path, laser_path, det_path = read_settings('settings.inp')
-confrim_settings(particle_path, gas_path, laser_path, det_path)
+confirm_settings(particle_path, gas_path, laser_path, det_path)
 
 therm_path = 'mixtures/therm.dat'
 
@@ -133,7 +133,7 @@ sizeset = np.hstack((sizeset_small, sizeset_med, sizeset_big))
 
 #preparation to pass to solver
 part_data = (           
-             Cp_data, ro_data, Em_data, shield_f,
+             Cp_data, ro_data, [Em_guess], shield_f,
              va_weight_data, va_pressure_data, va_dH_data, va_massacc, va_K,
              ox_k_data, ox_weight, ox_dH_data,
              ann_k_data, ann_dH, ann_Nd_frac,
@@ -187,13 +187,44 @@ CMD_sigma_guess = search_for_CMD_sigma(part_distrib, [50, 0.08], sizeset, signal
 
 print('Guessed CMD = {:.5} nm, sigma = {:.3}'.format(CMD_sigma_guess[0], CMD_sigma_guess[1]))
 
+CMD_sigma_factor_guess = search_for_CMD_sigma_factor(part_distrib, [50, 0.08], sizeset, signals_cache, signal_1[1])
+
+print('Guessed CMD = {:.5} nm, sigma = {:.3}, factor = {:.3}'.format(CMD_sigma_factor_guess[0], CMD_sigma_factor_guess[1], CMD_sigma_factor_guess[2]))
+
 
 probs_guess = get_bin_distrib(part_distrib, [CMD_sigma_guess[0], CMD_sigma_guess[1]], sizeset)
 signal_guess = np.matmul(signals_cache.T, probs_guess)
 signal_guess = signal_guess / np.amax(signal_guess)
-
 signal_guess, signal_1_shift = signals_collimator(signal_guess, signal_1[1])
 signal_guess = signal_adjuster(signal_guess, signal_1_shift, 'aftermax')
+
+i = timepoints.shape[-1] - signal_guess.shape[-1]
+timepoints_cut = timepoints[0:-i]
+
+print('Timepoints:', timepoints_cut.shape[-1])
+print('Signal 1:', signal_1_shift.shape[-1])
+print('Signal mod:', signal_guess.shape[-1])
+print('Raw', raw_signal.shape[-1])
+
+plt.plot(timepoints_cut, signal_1_shift, 'r-', timepoints_cut, signal_guess, 'b-')
+plt.legend(('1'))
+plt.ylabel('I')
+plt.xlabel('t')
+plt.suptitle('signals')
+plt.show()
+
+plt.plot(sizeset, probs_guess)
+plt.legend(('1'))
+plt.ylabel('I')
+plt.xlabel('t')
+plt.suptitle('signals')
+plt.show()
+
+probs_guess = get_bin_distrib(part_distrib, [CMD_sigma_factor_guess[0], CMD_sigma_factor_guess[1]], sizeset)
+signal_guess = np.matmul(signals_cache.T, probs_guess)
+signal_guess = signal_guess / np.amax(signal_guess)
+signal_guess, signal_1_shift = signals_collimator(signal_guess, signal_1[1])
+signal_guess = signal_adjuster(signal_guess, signal_1_shift, 'free_tune', CMD_sigma_factor_guess[2])
 
 i = timepoints.shape[-1] - signal_guess.shape[-1]
 timepoints_cut = timepoints[0:-i]
