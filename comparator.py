@@ -148,7 +148,7 @@ def signals_collimator(test_signal, exp_signal, mode='rise'):
     cll_exp_signal = cll_exp_signal[0:-exp_shift]
     cll_test_signal = cll_test_signal[0:-exp_shift]
             
-    return cll_test_signal, cll_exp_signal
+    return cll_test_signal, cll_exp_signal, exp_shift
     
 def signal_adjuster(test_signal, exp_signal, mode='noadjust', sfactor=1):
     """adjust test signal amplitude"""
@@ -171,7 +171,7 @@ def search_for_CMD(part_distrib, distrib_data, sizeset, signals_cache, exp_signa
         probs = get_bin_distrib(part_distrib, [CMD, distrib_data[1]], sizeset)
         test_signal = np.matmul(signals_cache.T, probs)
         test_signal = test_signal / np.amax(test_signal)
-        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        cll_test_signal, cll_exp_signal, _ = signals_collimator(test_signal, exp_signal)
         cll_test_signal = signal_adjuster(cll_test_signal, cll_exp_signal, 'aftermax')
         F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = round(time.time()*100)%64
@@ -192,7 +192,7 @@ def search_for_sigma(part_distrib, distrib_data, sizeset, signals_cache, exp_sig
         probs = get_bin_distrib(part_distrib, [distrib_data[0], sigma], sizeset)
         test_signal = np.matmul(signals_cache.T, probs)
         test_signal = test_signal / np.amax(test_signal)
-        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        cll_test_signal, cll_exp_signal, _ = signals_collimator(test_signal, exp_signal)
         F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = round(time.time()*100)%64
         #print(i*'░'+4*'█░'+(64-i)*'░', end='\r', flush=True)
@@ -213,7 +213,7 @@ def search_for_CMD_sigma(part_distrib, distrib_data, sizeset, signals_cache, exp
         probs = get_bin_distrib(part_distrib, [CMDsigma[0], CMDsigma[1]], sizeset)
         test_signal = np.matmul(signals_cache.T, probs)
         test_signal = test_signal / np.amax(test_signal)
-        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        cll_test_signal, cll_exp_signal, _ = signals_collimator(test_signal, exp_signal)
         cll_test_signal = signal_adjuster(cll_test_signal, cll_exp_signal, 'aftermax')
         F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = abs(64-round(time.time()*64)%128)
@@ -234,7 +234,7 @@ def search_for_CMD_sigma_factor(part_distrib, distrib_data, sizeset, signals_cac
         probs = get_bin_distrib(part_distrib, [CMDsigmaf[0], CMDsigmaf[1]], sizeset)
         test_signal = np.matmul(signals_cache.T, probs)
         test_signal = test_signal / np.amax(test_signal)
-        cll_test_signal, cll_exp_signal = signals_collimator(test_signal, exp_signal)
+        cll_test_signal, cll_exp_signal, _ = signals_collimator(test_signal, exp_signal)
         cll_test_signal = signal_adjuster(cll_test_signal, cll_exp_signal, 'free_tune', CMDsigmaf[2])
         F = signals_comparator(cll_exp_signal, cll_test_signal)
         i = abs(64-round(time.time()*64)%128)

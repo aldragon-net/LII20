@@ -67,9 +67,9 @@ signal_2 = read_LIIfile(signal_path_2)
 
 raw_signal = np.copy(signal_1[1])
 
-trunc_signal_1, trunc_signal_2 = process_signals(signal_1, signal_2)
+trunc_signal_1, trunc_signal_2, raw_signal_1 = process_signals(signal_1, signal_2)
 
-signal_1, signal_2 = normalize_signals(trunc_signal_1, trunc_signal_2, band_1, band_2, bb_s1s2)
+signal_1, raw_signal_1, signal_2 = normalize_signals(trunc_signal_1, raw_signal_1, trunc_signal_2, band_1, band_2, bb_s1s2)
 
 plt.plot(signal_1[0], signal_1[1], 'r-', signal_2[0], signal_2[1],'b-')
 plt.ylabel('I, a.u.')
@@ -192,61 +192,69 @@ CMD_sigma_factor_guess = search_for_CMD_sigma_factor(part_distrib, [50, 0.08], s
 print('Guessed CMD = {:.5} nm, sigma = {:.3}, factor = {:.3}'.format(CMD_sigma_factor_guess[0], CMD_sigma_factor_guess[1], CMD_sigma_factor_guess[2]))
 
 
-probs_guess = get_bin_distrib(part_distrib, [CMD_sigma_guess[0], CMD_sigma_guess[1]], sizeset)
-signal_guess = np.matmul(signals_cache.T, probs_guess)
-signal_guess = signal_guess / np.amax(signal_guess)
-signal_guess, signal_1_shift = signals_collimator(signal_guess, signal_1[1])
-signal_guess = signal_adjuster(signal_guess, signal_1_shift, 'aftermax')
-
-i = timepoints.shape[-1] - signal_guess.shape[-1]
-timepoints_cut = timepoints[0:-i]
-
-print('Timepoints:', timepoints_cut.shape[-1])
-print('Signal 1:', signal_1_shift.shape[-1])
-print('Signal mod:', signal_guess.shape[-1])
-print('Raw', raw_signal.shape[-1])
-
-plt.plot(timepoints_cut, signal_1_shift, 'r-', timepoints_cut, signal_guess, 'b-')
-plt.legend(('1'))
-plt.ylabel('I')
-plt.xlabel('t')
-plt.suptitle('signals')
-plt.show()
-
-plt.plot(sizeset, probs_guess)
-plt.legend(('1'))
-plt.ylabel('I')
-plt.xlabel('t')
-plt.suptitle('signals')
-plt.show()
-
 probs_guess = get_bin_distrib(part_distrib, [CMD_sigma_factor_guess[0], CMD_sigma_factor_guess[1]], sizeset)
 signal_guess = np.matmul(signals_cache.T, probs_guess)
 signal_guess = signal_guess / np.amax(signal_guess)
-signal_guess, signal_1_shift = signals_collimator(signal_guess, signal_1[1])
+signal_guess, signal_1_shift, exp_shift = signals_collimator(signal_guess, signal_1[1])
+cll_raw_signal_1 = np.roll(raw_signal_1[1], -exp_shift)
+cll_raw_signal_1 = cll_raw_signal_1[0:-exp_shift]
 signal_guess = signal_adjuster(signal_guess, signal_1_shift, 'free_tune', CMD_sigma_factor_guess[2])
 
 i = timepoints.shape[-1] - signal_guess.shape[-1]
 timepoints_cut = timepoints[0:-i]
 
-print('Timepoints:', timepoints_cut.shape[-1])
-print('Signal 1:', signal_1_shift.shape[-1])
-print('Signal mod:', signal_guess.shape[-1])
-print('Raw', raw_signal.shape[-1])
+probs_guess_B = get_bin_distrib(part_distrib, [CMD_sigma_guess[0], CMD_sigma_guess[1]], sizeset)
+signal_guess_B = np.matmul(signals_cache.T, probs_guess_B)
+signal_guess_B = signal_guess_B / np.amax(signal_guess_B)
+signal_guess_B, signal_1_shift_B, exp_shift = signals_collimator(signal_guess, signal_1[1])
+signal_guess_B = signal_adjuster(signal_guess, signal_1_shift_B, 'aftermax')
+i = timepoints.shape[-1] - signal_guess_B.shape[-1]
+timepoints_cut_B = timepoints[0:-i]
 
-plt.plot(timepoints_cut, signal_1_shift, 'r-', timepoints_cut, signal_guess, 'b-')
-plt.legend(('1'))
+
+wdths = np.zeros(sizeset.shape[0])
+bnds = np.zeros((sizeset.shape[0]+1))   
+bnds[0] = sizeset[0]/2
+for i in range(1, bnds.shape[0]-1):
+    bnds[i] = (sizeset[i]+sizeset[i-1])/2
+bnds[-1] = (3*sizeset[-1] - sizeset[-2])/2
+for i in range(wdths.shape[0]):
+    wdths[i] = bnds[i+1]-bnds[i]
+
+norm_prob_guess = probs_guess / wdths
+norm_prob_guess = norm_prob_guess / np.amax(norm_prob_guess)
+
+size_data, bin_width = get_size_bins(part_distrib, [CMD_sigma_factor_guess[0], CMD_sigma_factor_guess[1]], 12)
+bin_distr_x = []
+bin_distr_y = []
+for i in range(size_data.shape[-1]):
+    prob_den = size_data[0][i]/bin_width
+    bin_distr_x.append(size_data[1][i]-bin_width/2)
+    bin_distr_y.append(0)
+    bin_distr_x.append(size_data[1][i]-bin_width/2)
+    bin_distr_y.append(prob_den)
+    bin_distr_x.append(size_data[1][i]+bin_width/2)
+    bin_distr_y.append(prob_den)
+    bin_distr_x.append(size_data[1][i]+bin_width/2)
+    bin_distr_y.append(0)
+
+plt.plot(timepoints_cut*1e9, cll_raw_signal_1, '#DDDDDD',
+         timepoints_cut*1e9, signal_1_shift, 'k-',
+         timepoints_cut*1e9, signal_guess, 'r-',
+         timepoints_cut_B*1e9, signal_guess_B, 'g--')
+plt.legend(('raw', 'smoothed', 'guessed', 'g2'),
+           loc='lower left', bbox_to_anchor=(0.65, 0.6))
 plt.ylabel('I')
 plt.xlabel('t')
 plt.suptitle('signals')
+plt.axes([.65, .3, .2, .2])
+plt.plot(bin_distr_x, bin_distr_y)
+plt.ylabel('x')
+plt.xlabel('size, nm')
 plt.show()
 
-plt.plot(sizeset, probs_guess)
-plt.legend(('1'))
-plt.ylabel('I')
-plt.xlabel('t')
-plt.suptitle('signals')
-plt.show()
+print('Press any key to quit')
+input()
 
     
     

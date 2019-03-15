@@ -53,21 +53,23 @@ def cut_tails(signal, noise):
     
     trunc_signal = signal[:, left_cut_index:right_cut_index]
     
-    return trunc_signal
+    return trunc_signal, left_cut_index, right_cut_index
      
 def process_signals(signal_1, signal_2):
     """process and visualize input signals"""
     shifted_signal_1, offset_1, noise_1 = subtract_offset(signal_1)
     flipped_signal_1, is_signal_1_flipped = flip_signal(shifted_signal_1)
+    raw_signal_1 = np.copy(flipped_signal_1)
     smoothed_signal_1 = SG_smooth_signal(flipped_signal_1)
-    trunc_signal_1 = cut_tails(smoothed_signal_1, noise_1)
+    trunc_signal_1, left_cut_index, right_cut_index = cut_tails(smoothed_signal_1, noise_1)
+    raw_signal_1 = raw_signal_1[:, left_cut_index:right_cut_index]
     offset_line_1 =[[signal_1[0,0]*1e9, signal_1[0,-1]*1e9], [offset_1, offset_1]]
     noise_line_1 = [[trunc_signal_1[0,0]*1e9, trunc_signal_1[0,-1]*1e9], [noise_1*2, noise_1*2]] 
 
     shifted_signal_2, offset_2, noise_2 = subtract_offset(signal_2)
     flipped_signal_2, is_signal_2_flipped = flip_signal(shifted_signal_2)
     smoothed_signal_2 = SG_smooth_signal(flipped_signal_2)
-    trunc_signal_2 = cut_tails(smoothed_signal_2, noise_2)
+    trunc_signal_2, _, _ = cut_tails(smoothed_signal_2, noise_2)
     offset_line_2 =[[signal_2[0,0]*1e9, signal_2[0,-1]*1e9], [offset_2, offset_2]]
     noise_line_2 = [[trunc_signal_2[0,0]*1e9, trunc_signal_2[0,-1]*1e9], [noise_2*2, noise_2*2]] 
 
@@ -106,9 +108,9 @@ def process_signals(signal_1, signal_2):
 
     plt.suptitle('Input LII signals')
     plt.show()
-    return trunc_signal_1, trunc_signal_2
+    return trunc_signal_1, trunc_signal_2, raw_signal_1
 
-def normalize_signals(signal_1, signal_2, band_1, band_2, bb_s1s2):
+def normalize_signals(signal_1, raw_signal_1, signal_2, band_1, band_2, bb_s1s2):
     """normalize signals according to BB ration"""
     T_bb, exp_s1s2 = bb_s1s2
     theor_s1 = LII_rad_wide([1], 1, T_bb, band_1)
@@ -120,8 +122,9 @@ def normalize_signals(signal_1, signal_2, band_1, band_2, bb_s1s2):
     norm_signal_1 = np.copy(signal_1)
     norm_signal_2 = np.copy(signal_2)
     norm_signal_1[1] = signal_1[1] / max_s1
+    raw_signal_1[1] = raw_signal_1[1] / max_s1
     norm_signal_2[1] = signal_2[1] / (max_s1*theor_s1s2/exp_s1s2)
-    return norm_signal_1, norm_signal_2
+    return norm_signal_1, raw_signal_1, norm_signal_2
     
         
     
